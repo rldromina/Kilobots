@@ -23,7 +23,7 @@ void set_led(int new_state) {
 }
 
 void loop() {
-    int random_number = rand_hard(); // "Tiro la moneda"
+    int random_number = rand_soft(); // "Tiro la moneda"
     new_state = (random_number % 2);
     set_led(new_state);
     delay(TIME);
