@@ -2,6 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 plt.style.use('../estilo_latex.mplstyle')
+from matplotlib.gridspec import GridSpec
 import math
 import random
 import itertools
@@ -97,35 +98,45 @@ def estadistica_moneda(realizaciones, tiradas):
 
 
 def graficador(directory, file):
-    fig, (ax, ax2, ax3) = plt.subplots(3)
-    
+
     data, meta = importo(directory, file)
     t = data['TIME']
     I = data['INT']
-    R = autocorrelacion(umbral(I))
-    segundos = int(meta['segundos'])
-    print('Duración:', segundos)
-    count = contador_consecutividades(umbral(I))
-    media = estadistica_moneda(100, segundos)
-    print('Media de varias realizaciones:', media)
-    
-    ax.plot(t, umbral(I), 'o', label=r'umbral aplicado')
-    ax.plot(t, I/255, 'x', c='C2', label=r'medición cruda (normalizada)')
-    ax.set_ylabel(r'intensidad $I(t)$')
-    ax.legend(title=r'%.3f on - %.3f off' % on_off(umbral(I)))
 
-    ax2.plot(t, R, '.')
+    count = contador_consecutividades(umbral(I))
+    media = estadistica_moneda(100, int(meta['segundos']))
+    t_, I_ = moneda(int(meta['segundos']))
+    
+    ax0 = plt.subplot(321)
+    ax0.plot(t, umbral(I), 'o', label=r'umbral aplicado')
+    ax0.plot(t, I/255, 'x', c='C2', label=r'medición cruda (normalizada)')
+    ax0.set_ylabel(r'intensidad $I(t)$')
+    ax0.legend(title=r'%.3f on - %.3f off' % on_off(umbral(I)))
+
+    ax1 = plt.subplot(322)
+    ax1.plot(t_, I_, 'x', c='C1', label=r'una simulación con igual nro. de tiradas')
+    ax1.set_ylabel(r'intensidad $I_{\mathrm{sim}}(t)$')
+    ax1.legend()
+    
+    ax2 = plt.subplot(323)
+    ax2.plot(t, autocorrelacion(umbral(I)), '.')
     ax2.set_xlabel(r'tiempo $t$ [\si{\s}]')
     ax2.set_ylabel(r'autocorrelación de $I(t)$')
 
-    ax3.plot(range(1, len(count)+1), count, 'o', label='medido')
-    ax3.plot(range(1, len(media)+1), media, 'x', label='simulado')
-    ax3.set_xlabel(r'longitud')
-    ax3.set_ylabel(r'ocurrencia')
-    ax3.legend()
+    ax3 = plt.subplot(324)
+    ax3.plot(t_, autocorrelacion(I_), c='C1', marker='.')
+    ax3.set_xlabel(r'tiempo $t$ [\si{\s}]')
+    ax3.set_ylabel(r'autocorrelación de $I_{\mathrm{sim}}(t)$')
+
+    ax4 = plt.subplot(313)
+    ax4.plot(range(1, len(count)+1), count, 'o', label='medido')
+    ax4.plot(range(1, len(media)+1), media, 'x', label='simulado (100 veces)')
+    ax4.set_xlabel(r'longitud de la consecutividad')
+    ax4.set_ylabel(r'frecuencia')
+    ax4.legend()
     
     plt.tight_layout()
     plt.show()
 
 
-graficador('Moneda', '1000_1h')
+graficador('Moneda', '1000b')
