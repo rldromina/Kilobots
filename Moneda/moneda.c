@@ -23,7 +23,7 @@ void set_LED(int new_state) {
 }
 
 void loop() {
-    int random_number = rand_soft();
+    int random_number = rand_hard();
     new_state = (random_number % 2);
     set_LED(new_state);
     delay(TIME);
