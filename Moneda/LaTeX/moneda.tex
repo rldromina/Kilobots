@@ -39,7 +39,7 @@ De cada medición obtenemos un \texttt{.csv} que en sus columnas tiene (i) la in
 \begin{figure}[!h]
 	\centering
 	\includegraphics[width=\linewidth]{Resultados/15min_b.png}
-	\caption{15 minutos.}
+	\caption{15 minutos, medición b.}
 \end{figure}
 
 La medición cruda fue tomada, parece, con mucha luz ambiental. Por eso cuando el LED estaba apagado, el valor de la intensidad está más cerca de saturar\footnote{Los valores presentados en verde están normalizados, o sea, divididos por 255.} (255) que de cero. Aun así se logra distinguir los dos estados del Kilobot. Para el análisis le pasamos un \href{https://github.com/rldromina/Kilobots/blob/tom/Moneda/aux.py}{umbral} que asigna sólo dos valores: 1 (prendido) y 0 (apagado).
@@ -52,19 +52,35 @@ En Labo 7 notábamos que ocurrían consecutividades en las tiradas de longitud $
 
 
 
-Nos focalizamos entonces en el conteo de consecutividades. Para esta medición, comparamos esta frecuencia de aparición de consecutividades con las de una moneda simulada. Presentamos, en naranja, la media de $100$ realizaciones, cada una con la misma cantidad de tiradas\footnote{Si la cantidad de tiradas es muuuy grande es posible, aunque poco probable, que aparezca una consecutividad de, por ejemplo, longitud $n=20$, lo cual es casi imposible si la cantidad de tiradas es $20$ e imposible si es menor.}. Me sorprendió mucho que las frecuencias medidas y simuladas concuerden tan bien. 
+Nos focalizamos entonces en el conteo de consecutividades. Para esta medición, comparamos esta frecuencia de aparición de consecutividades con las de una moneda simulada. Presentamos, en naranja, la media de $100$ realizaciones, cada una con la misma cantidad de tiradas\footnote{Si la cantidad de tiradas es muuuy grande es posible, aunque poco probable, que aparezca una consecutividad de, por ejemplo, longitud $n=20$, lo cual es casi imposible si la cantidad de tiradas es $20$ e imposible si es menor. Por ejemplo, ocurrió por lo menos una vez una consecutividad de longitud $17$ en un alguna de las $100$ simulaciones.}. Me sorprendió mucho que las frecuencias medidas y simuladas concuerden tan bien. 
 
-Resumiendo, lo medido (y de lo que sospechábamos) y lo simulado presenta el mismo comportamientos:
+Resumiendo, lo medido (y de lo que sospechábamos) y lo simulado presentan el mismo comportamiento:
 \begin{itemize}
 	\item 51.7\% on - 48.3\% off vs. 47.2\% on - 52.8\% off
-	\item tiempo de correlación $= \SI{1}{\second}$
+	\item mismo tiempo de correlación $= \SI{1}{\second}$
 	\item misma distribución de consecutividades (!)
 \end{itemize}
 
+Para las otras mediciones, los resultados fueron:
 
 
+\begin{figure}[!h]
+	\centering
+	\includegraphics[width=\linewidth]{Resultados/15min_c.png}
+	\caption{15 minutos, medición c.}
+\end{figure}
 
+\begin{figure}[!h]
+	\centering
+	\includegraphics[width=\linewidth]{Resultados/15min_d.png}
+	\caption{15 minutos, medición d.}
+\end{figure}
 
+\begin{figure}[!h]
+	\centering
+	\includegraphics[width=\linewidth]{Resultados/1h.png}
+	\caption{1 hora.}
+\end{figure}
 
 
 
