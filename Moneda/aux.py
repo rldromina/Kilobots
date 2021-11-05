@@ -114,9 +114,9 @@ def graficador(directory, file):
     ax0.legend(title=r'%.3f on - %.3f off' % on_off(umbral(I)))
 
     ax1 = plt.subplot(322)
-    ax1.plot(t_, I_, 'x', c='C1', label=r'una simulación con igual nro. de tiradas')
+    ax1.plot(t_, I_, 'x', c='C1', label=r'una simulación con igual cantidad de tiradas')
     ax1.set_ylabel(r'intensidad $I_{\mathrm{sim}}(t)$')
-    ax1.legend()
+    ax1.legend(title=r'%.3f on - %.3f off' % on_off(I_))
     
     ax2 = plt.subplot(323)
     ax2.plot(t, autocorrelacion(umbral(I)), '.')
@@ -131,7 +131,7 @@ def graficador(directory, file):
     ax4 = plt.subplot(313)
     ax4.plot(range(1, len(count)+1), count, 'o', label='medido')
     ax4.plot(range(1, len(media)+1), media, 'x', label='simulado (100 veces)')
-    ax4.set_xlabel(r'longitud de la consecutividad')
+    ax4.set_xlabel(r'longitud $n$ de la consecutividad')
     ax4.set_ylabel(r'frecuencia')
     ax4.legend()
     
@@ -139,4 +139,4 @@ def graficador(directory, file):
     plt.show()
 
 
-graficador('Moneda', '1000b')
+graficador('Moneda', '1000_1h')
