@@ -135,8 +135,7 @@ def graficador(directory, file):
     ax4.set_ylabel(r'frecuencia')
     ax4.legend()
     
-    plt.tight_layout()
     plt.show()
 
 
-graficador('Moneda', '1000_1h')
+graficador('Moneda', '1000_hard')
