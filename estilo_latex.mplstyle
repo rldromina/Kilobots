@@ -36,5 +36,5 @@ legend.frameon       : False
 legend.handletextpad : 0.3
 
 figure.autolayout   : True
-savefig.format      : pdf
+savefig.format      : png
 savefig.bbox        : tight
