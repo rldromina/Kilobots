@@ -35,7 +35,7 @@ for c, fr in enumerate(frames):
     print('\n--------------- %s (%d de %d) ---------------' % (fr, c+1, N))
 
     img = cv2.imread(frames_dir + fr, 0) # Cargo un frame en escala de grises
-    #img = cv2.medianBlur(img, 3) # Un promedio sobre pxs que elimina el ruido
+    #img = cv2.medianBlur(img, 3) # Promedio sobre pxs que elimina el ruido
 
     # Recorto un entorno cuadrado alrededor del centro del LED
     img_ = img[meta['i']-meta['e'] : meta['i']+meta['e']+1, 
