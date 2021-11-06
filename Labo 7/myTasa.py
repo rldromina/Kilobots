@@ -7,11 +7,9 @@ path = os.path.expanduser('~/Escritorio/Data/Calibración/')
 file = '65_74'
 
 tasa = 1 # Voy a guardar uno de cada 'tasa' frames
-
 radio = 150 # Radio de la arena (en milímetros)
 time = 1000 # Tiempo de un giro (en milisegundos)
 left, right = 65, 74 # Calibración del Kilobot
-
 r_ar = 356 # Guess para el radio de la arena (¡Verificar en KolourPaint!)
 r_oj = 6 # Guess para el radio de los ojalillos
 e = 16 # 2*e va a ser el lado del recorte cuadrado
