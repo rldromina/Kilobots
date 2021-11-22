@@ -3,17 +3,16 @@ import numpy as np
 import pandas as pd
 import cv2
 
-cwd = os.getcwd()
-exp = os.path.basename(cwd)
-file = 'cuadro'
+REPO = os.path.expanduser('~/Escritorio/Repositorios/Kilobots') 
+file = '65_73'
 
-time = 1000 # Tiempo mínimo de LED prendido/apagado (en milisegundos)
-tasa = 1 # Voy a guardar 1 de cada 'tasa' frames
-
-
+step = 3000 # Tiempo mínimo de Kilobot girando (en milisegundos)
+left, right = 65, 73 # Calibración del Kilobot
+tasa = 1 # Voy a guardar uno de cada 'tasa' frames
+radio = 150 # Radio de la arena (en milímetros)
 
 #################### CREO LA CARPETA DE FRAMES ####################
-frames_dir = f'{cwd}/../Media/{exp}/{file}(frames)'
+frames_dir = f'{REPO}/Media/{file}(frames)'
 try:
     os.makedirs(frames_dir)
     print(f'Se creó {frames_dir}')
@@ -21,7 +20,7 @@ except FileExistsError:
     print(f'Ya existe {frames_dir}')
 
 #################### CARGO EL VIDEO Y EXTRAIGO SUS FRAMES ####################
-video_fname = f'{cwd}/../Media/{exp}/{file}.mp4'
+video_fname = f'{REPO}/Media/{file}.mp4'
 cap = cv2.VideoCapture(video_fname)
 
 fps = cap.get(cv2.CAP_PROP_FPS)
@@ -46,7 +45,7 @@ while cap.isOpened():
 cap.release()
 
 #################### CREO LA CARPETA DE CSV's ####################
-csv_dir = f'{cwd}/../Data/{exp}/{file}(csv)'
+csv_dir = f'{REPO}/Data/{file}(csv)'
 try:
     os.makedirs(csv_dir)
     print(f'Se creó {csv_dir}')
@@ -55,7 +54,8 @@ except FileExistsError:
 
 #################### EXPORTO LOS METADATOS COMO .CSV ####################
 meta_dict = {
-    'time': [time], 'tasa': [tasa], 'fps': [fps], 
+    'step': [step], 'left': [left], 'right': [right], 
+    'tasa': [tasa], 'radio': [radio], 'fps': [fps], 
     'frames_count': [frames_count], 'segundos': [segundos],
 }
 meta = pd.DataFrame(meta_dict)

@@ -1,7 +1,8 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-plt.style.use('../estilo_latex.mplstyle')
+#plt.style.use('../estilo_latex.mplstyle')
+from matplotlib.gridspec import GridSpec
 import math
 import random
 import itertools
@@ -15,7 +16,7 @@ frames = int(fps/tasa) # Cuántos frames respresentan 1 segundo
 
 
 def importo(directory, file):
-    path = os.path.expanduser('~/Escritorio/Data/') + directory + '/' 
+    path = os.path.expanduser('~/Escritorio/Repos/Kilobots/Data/') + directory + '/' 
     data_fname = path + file + '/' + file + '_data.csv'
     meta_fname = path + file + '/' + file + '_meta.csv'
     data = np.genfromtxt(data_fname, delimiter=',', names=True)
@@ -28,7 +29,7 @@ def umbral(x):
     de umbral 'th' les asigno el valor 0 (LED apagado). A los demás
     les asigno el valor 1 (LED prendido).
     """
-    th = 253
+    th = 20
     y = np.where(x<th, 0, 1)
     return y
 
@@ -97,35 +98,44 @@ def estadistica_moneda(realizaciones, tiradas):
 
 
 def graficador(directory, file):
-    fig, (ax, ax2, ax3) = plt.subplots(3)
-    
+
     data, meta = importo(directory, file)
     t = data['TIME']
     I = data['INT']
-    R = autocorrelacion(umbral(I))
-    segundos = int(meta['segundos'])
-    print('Duración:', segundos)
-    count = contador_consecutividades(umbral(I))
-    media = estadistica_moneda(100, segundos)
-    print('Media de varias realizaciones:', media)
-    
-    ax.plot(t, umbral(I), 'o', label=r'umbral aplicado')
-    ax.plot(t, I/255, 'x', c='C2', label=r'medición cruda (normalizada)')
-    ax.set_ylabel(r'intensidad $I(t)$')
-    ax.legend(title=r'%.3f on - %.3f off' % on_off(umbral(I)))
 
-    ax2.plot(t, R, '.')
+    count = contador_consecutividades(umbral(I))
+    media = estadistica_moneda(100, int(meta['segundos']))
+    t_, I_ = moneda(int(meta['segundos']))
+    
+    ax0 = plt.subplot(321)
+    ax0.plot(t, umbral(I), 'o', label=r'umbral aplicado')
+    ax0.plot(t, I/255, 'x', c='C2', label=r'medición cruda (normalizada)')
+    ax0.set_ylabel(r'intensidad $I(t)$')
+    ax0.legend(title=r'%.9f on - %.9f off' % on_off(umbral(I)))
+
+    ax1 = plt.subplot(322)
+    ax1.plot(t_, I_, 'x', c='C1', label=r'una simulación con igual cantidad de tiradas')
+    ax1.set_ylabel(r'intensidad $I_{\mathrm{sim}}(t)$')
+    ax1.legend(title=r'%.3f on - %.3f off' % on_off(I_))
+    
+    ax2 = plt.subplot(323)
+    ax2.plot(t, autocorrelacion(umbral(I)), '.')
     ax2.set_xlabel(r'tiempo $t$ [\si{\s}]')
     ax2.set_ylabel(r'autocorrelación de $I(t)$')
 
-    ax3.plot(range(1, len(count)+1), count, 'o', label='medido')
-    ax3.plot(range(1, len(media)+1), media, 'x', label='simulado')
-    ax3.set_xlabel(r'longitud')
-    ax3.set_ylabel(r'ocurrencia')
-    ax3.legend()
+    ax3 = plt.subplot(324)
+    ax3.plot(t_, autocorrelacion(I_), c='C1', marker='.')
+    ax3.set_xlabel(r'tiempo $t$ [\si{\s}]')
+    ax3.set_ylabel(r'autocorrelación de $I_{\mathrm{sim}}(t)$')
+
+    ax4 = plt.subplot(313)
+    ax4.plot(range(1, len(count)+1), count, 'o', label='medido')
+    ax4.plot(range(1, len(media)+1), media, 'x', label='simulado (100 veces)')
+    ax4.set_xlabel(r'longitud $n$ de la consecutividad')
+    ax4.set_ylabel(r'frecuencia')
+    ax4.legend()
     
-    plt.tight_layout()
     plt.show()
 
 
-graficador('Moneda', '1000_1h')
+graficador('Moneda', 'seed_hard_1h')
