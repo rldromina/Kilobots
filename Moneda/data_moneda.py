@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 
 path = os.path.expanduser('~/Escritorio/Data/Moneda/')
-file = '1000_1h'
+file = '30min_soft1'
 
 #################### PREPARO LOS FRAMES ####################
 frames_dir = path + file + '/frames/'

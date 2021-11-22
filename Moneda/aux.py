@@ -29,7 +29,7 @@ def umbral(x):
     de umbral 'th' les asigno el valor 0 (LED apagado). A los demás
     les asigno el valor 1 (LED prendido).
     """
-    th = 253
+    th = 250
     y = np.where(x<th, 0, 1)
     return y
 
@@ -138,4 +138,4 @@ def graficador(directory, file):
     plt.show()
 
 
-graficador('Moneda', '1000_hard')
+graficador('Moneda', '30min_soft1')

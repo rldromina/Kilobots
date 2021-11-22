@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 
 path = os.path.expanduser('~/Escritorio/Data/Moneda/')
-file = '1000_1h'
+file = '30min_soft2'
 
 tasa = 1 # Voy a guardar 1 de cada 'tasa' frames
 time = 1000 # Tiempo de LED prendido en un tirada (en milisegundos)
