@@ -3,8 +3,8 @@ import numpy as np
 import pandas as pd
 import cv2
 
-REPO = os.path.expanduser('~/Escritorio/Repos/Kilobots') 
-file = '1minuto'
+REPO = os.path.expanduser('~/Escritorio/Repositorios/Kilobots') 
+file = '65_73'
 
 def graficador_circulos(img, circles):
     """Grafica en la imagen 'img' de tres canales, los centros 
@@ -37,7 +37,7 @@ csv_dir = f'{REPO}/Data/{file}(csv)'
 meta_fname = f'{csv_dir}/{file}_meta.csv'
 meta = pd.read_csv(meta_fname)
 
-meta['radio_guess'] = radio_guess = 340 # Guess para el radio de la arena (en píxeles)
+meta['radio_guess'] = radio_guess = 350 # Guess para el radio de la arena (en píxeles)
 meta['ojal_guess'] = ojal_guess = 6 # Guess para el radio de los ojalillos (en píxeles)
 meta['e'] = e = 16 # 2*e = lado del cuadrado que voy a recortar (en píxeles)
 meta['th'] = th = 13 # Umbral 'param2' del método HoughCircles

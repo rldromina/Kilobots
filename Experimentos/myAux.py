@@ -90,9 +90,9 @@ def graficador_arena(path, file):
     # ---------- Trayectoria ----------
     ax.scatter(x, y, c=range(len(x)), cmap='autumn', s=1)
     # ---------- Posición inicial del Kilobot ----------
-    kb = mpl.image.imread('/home/tom/Escritorio/dibujo.png')
-    img_kb = OffsetImage(kb, zoom=0.45)
-    ax.add_artist(AnnotationBbox(img_kb, (x[0],y[0]), frameon=False))
+    #kb = mpl.image.imread('/home/tom/Escritorio/dibujo.png')
+    #img_kb = OffsetImage(kb, zoom=0.45)
+    #ax.add_artist(AnnotationBbox(img_kb, (x[0],y[0]), frameon=False))
     ax.plot(3*[x[0]], [y[0]-16, y[0], y[0]+16], '-o', c='lime', ms=3, zorder=5)
     # ---------- Escala ----------
     x0, y0 = 110, -160
@@ -507,10 +507,10 @@ def hexbug(lista, carpeta):
     ax.legend()
     plt.show()
 
-my_path = '/home/tom/Escritorio/Repos/Kilobots/Data'
-my_file = '1minuto'
-graficador_arena(my_path, my_file)
-#evolucion_temporal(my_path, [my_file], VAR='ALPHA_UN')
+my_path = '/home/tom/Escritorio/Repositorios/Kilobots/Data'
+my_file = '65_73'
+#graficador_arena(my_path, my_file)
+evolucion_temporal(my_path, [my_file], VAR='ALPHA_UN')
 
 #videos = sorted([v for v in os.listdir(carpeta) if os.path.isdir(carpeta+v)])
 

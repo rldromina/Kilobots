@@ -3,11 +3,11 @@ import numpy as np
 import pandas as pd
 import cv2
 
-REPO = os.path.expanduser('~/Escritorio/Repos/Kilobots') 
-file = '1minuto'
+REPO = os.path.expanduser('~/Escritorio/Repositorios/Kilobots') 
+file = '65_73'
 
-step = 1000 # Tiempo mínimo de Kilobot girando (en milisegundos)
-left, right = 65, 74 # Calibración del Kilobot
+step = 3000 # Tiempo mínimo de Kilobot girando (en milisegundos)
+left, right = 65, 73 # Calibración del Kilobot
 tasa = 1 # Voy a guardar uno de cada 'tasa' frames
 radio = 150 # Radio de la arena (en milímetros)
 
