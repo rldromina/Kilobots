@@ -507,8 +507,8 @@ def hexbug(lista, carpeta):
     ax.legend()
     plt.show()
 
-my_path = '/home/tom/Escritorio/Repositorios/Kilobots/Data'
-my_file = '65_73'
+my_path = os.path.expanduser('~/Escritorio/Repositorios/Kilobots/Data')
+my_file = '65_73c'
 #graficador_arena(my_path, my_file)
 evolucion_temporal(my_path, [my_file], VAR='ALPHA_UN')
 
