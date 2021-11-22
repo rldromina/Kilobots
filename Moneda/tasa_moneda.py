@@ -1,54 +1,63 @@
 import os
 import numpy as np
+import pandas as pd
 import cv2
 
-path = os.path.expanduser('~/Escritorio/Data/Moneda/')
-file = '30min_soft2'
+cwd = os.getcwd()
+exp = os.path.basename(cwd)
+file = 'cuadro'
 
+time = 1000 # Tiempo mínimo de LED prendido/apagado (en milisegundos)
 tasa = 1 # Voy a guardar 1 de cada 'tasa' frames
-time = 1000 # Tiempo de LED prendido en un tirada (en milisegundos)
-e = 10 # Tamaño del recorte donde voy a ver prendido/apagado
 
-#################### CARGO EL VIDEO Y CREO SU CARPETA ####################
-video_fname = path + file + '.mp4'
-frames_dir = path + file + '/frames/'
 
-cap = cv2.VideoCapture(video_fname)
 
+#################### CREO LA CARPETA DE FRAMES ####################
+frames_dir = f'{cwd}/../Media/{exp}/{file}(frames)'
 try:
     os.makedirs(frames_dir)
-    print("Se creó '%s'\n" % frames_dir)
+    print(f'Se creó {frames_dir}')
 except FileExistsError:
-    print("Ya existe '%s'\n" % frames_dir)
+    print(f'Ya existe {frames_dir}')
 
-#################### EXTRAIGO LOS FRAMES ####################
+#################### CARGO EL VIDEO Y EXTRAIGO SUS FRAMES ####################
+video_fname = f'{cwd}/../Media/{exp}/{file}.mp4'
+cap = cv2.VideoCapture(video_fname)
+
 fps = cap.get(cv2.CAP_PROP_FPS)
 frames_count = cap.get(cv2.CAP_PROP_FRAME_COUNT)
 segundos = frames_count / fps
 
-print("Este video '%s.mp4', grabado a %d fps, tiene %d frames y dura %d min." 
-      % (file, fps, frames_count, segundos/60))
-print('Extraigo 1 de cada %d frames...' % tasa)
+print(f"Este video '{file}.mp4', grabado a {fps:.1f} fps, "
+      f"tiene {frames_count} frames y dura {segundos/60:.1f} minutos")
+print(f'Extraigo 1 de cada {tasa} frames...')
 
-i = 1
+i = 0
 while cap.isOpened():
     ret, frame = cap.read()
     if ret == False:
         break
     if i%tasa == 0:
-        frame_fname = frames_dir + 'frame_' + str(i) + '.jpg'
-        cv2.imwrite(frame_fname, frame)
+        cv2.imwrite(f'{frames_dir}/frame_{str(i)}.jpg', frame)      
     if i%1000 == 0:
-        pc = (i/frames_count) * 100
-        print('...%d%% completo' % pc)
+        print(f'...{i/frames_count:.0%} completo')
     i+=1
 
 cap.release()
-cv2.destroyAllWindows()
+
+#################### CREO LA CARPETA DE CSV's ####################
+csv_dir = f'{cwd}/../Data/{exp}/{file}(csv)'
+try:
+    os.makedirs(csv_dir)
+    print(f'Se creó {csv_dir}')
+except FileExistsError:
+    print(f'Ya existe {csv_dir}')
 
 #################### EXPORTO LOS METADATOS COMO .CSV ####################
-meta = np.array([[0, 0, e, tasa, time, fps, frames_count, segundos]])
-meta_fname = path + file + '/' + file + '_meta.csv'
-meta_header = 'i,j,e,tasa,time,fps,frames_count,segundos'
-
-np.savetxt(meta_fname, meta, header=meta_header, fmt='%d', delimiter=',', comments='')
+meta_dict = {
+    'time': [time], 'tasa': [tasa], 'fps': [fps], 
+    'frames_count': [frames_count], 'segundos': [segundos],
+}
+meta = pd.DataFrame(meta_dict)
+meta_fname = f'{csv_dir}/{file}_meta.csv'
+meta.to_csv(meta_fname, index=False)

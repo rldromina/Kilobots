@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-plt.style.use('../estilo_latex.mplstyle')
+#plt.style.use('../estilo_latex.mplstyle')
 from matplotlib.gridspec import GridSpec
 import math
 import random
@@ -16,7 +16,7 @@ frames = int(fps/tasa) # Cuántos frames respresentan 1 segundo
 
 
 def importo(directory, file):
-    path = os.path.expanduser('~/Escritorio/Data/') + directory + '/' 
+    path = os.path.expanduser('~/Escritorio/Repos/Kilobots/Data/') + directory + '/' 
     data_fname = path + file + '/' + file + '_data.csv'
     meta_fname = path + file + '/' + file + '_meta.csv'
     data = np.genfromtxt(data_fname, delimiter=',', names=True)
@@ -29,7 +29,7 @@ def umbral(x):
     de umbral 'th' les asigno el valor 0 (LED apagado). A los demás
     les asigno el valor 1 (LED prendido).
     """
-    th = 250
+    th = 20
     y = np.where(x<th, 0, 1)
     return y
 
@@ -111,7 +111,7 @@ def graficador(directory, file):
     ax0.plot(t, umbral(I), 'o', label=r'umbral aplicado')
     ax0.plot(t, I/255, 'x', c='C2', label=r'medición cruda (normalizada)')
     ax0.set_ylabel(r'intensidad $I(t)$')
-    ax0.legend(title=r'%.3f on - %.3f off' % on_off(umbral(I)))
+    ax0.legend(title=r'%.9f on - %.9f off' % on_off(umbral(I)))
 
     ax1 = plt.subplot(322)
     ax1.plot(t_, I_, 'x', c='C1', label=r'una simulación con igual cantidad de tiradas')
@@ -138,4 +138,4 @@ def graficador(directory, file):
     plt.show()
 
 
-graficador('Moneda', '30min_soft1')
+graficador('Moneda', 'seed_hard_1h')
