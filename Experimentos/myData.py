@@ -4,7 +4,7 @@ import pandas as pd
 import cv2
 
 REPO = os.path.expanduser('~/Escritorio/Repositorios/Kilobots') 
-file = '65_73'
+file = '64_71'
 
 def graficador_circulos(img, circles):
     """Grafica en la imagen 'img' de tres canales, los centros 

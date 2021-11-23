@@ -4,7 +4,7 @@ import pandas as pd
 import cv2
 
 REPO = os.path.expanduser('~/Escritorio/Repositorios/Kilobots') 
-file = '65_73'
+file = '65_73b'
 
 step = 3000 # Tiempo mínimo de Kilobot girando (en milisegundos)
 left, right = 65, 73 # Calibración del Kilobot

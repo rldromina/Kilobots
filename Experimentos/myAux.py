@@ -508,7 +508,7 @@ def hexbug(lista, carpeta):
     plt.show()
 
 my_path = '/home/tom/Escritorio/Repositorios/Kilobots/Data'
-my_file = '65_73'
+my_file = '64_71'
 #graficador_arena(my_path, my_file)
 evolucion_temporal(my_path, [my_file], VAR='ALPHA_UN')
 
