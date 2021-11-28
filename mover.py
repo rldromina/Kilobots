@@ -1,7 +1,7 @@
 import shutil, os
 from pathlib import Path
 
-#origen = r'/run/user/1000/gvfs/mtp:host=Sony_E5606_YT911BA6SB/Almacenamiento interno/DCIM/OpenCamera/Kilobot'
+origen = r'/run/user/1000/gvfs/mtp:host=Sony_E5606_YT911BA6SB/Almacenamiento interno/DCIM/OpenCamera/Kilobot'
 
 
 origen = os.path.expanduser('~/Escritorio/origen')
