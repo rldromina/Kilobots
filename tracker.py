@@ -8,38 +8,66 @@ repo_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots')
 camara_dir = r'/run/user/1000/gvfs/mtp:host=Sony_E5606_YT911BA6SB/Almacenamiento interno/DCIM/OpenCamera/Kilobot'
 media_dir = f'{repo_dir}/Media'
 
-
-def mover(origen, destino):
+def cam2pc(origen, destino):
     """Si el usuario quiere, los archivos alojados en 'origen'
     son movidos a 'destino' y renombrados.
     """
     files = os.listdir(origen)
+    files_dest = [X.split('.')[0] for X in os.listdir(destino)]
     if files == []:
         print(f"¡No hay archivos en esta carpeta '{origen}'!")
     else:
-        print(f"Estos son los archivos alojados en '{origen}':\n{files}")
+        print(f"Estos son los archivos alojados en '{origen}' (fecha y horario indicada en el nombre):\n{files}")
         for f in files:
             prompt_mv = input(f'¿Quiere mover {f} a {destino}? [y/n] ')
             if prompt_mv.lower() == 'y':
-                shutil.move(f'{origen}/{f}', destino)
+                print('Moviendo...')
+                mover(f'{origen}/{f}', destino)
                 prompt_rn = input(f'¿Quiere renombrar a {f}? [y/n] ')
+
                 if prompt_rn.lower() == 'y':
+
+                    newname = input('nuevo nombre: ',)
+                    while (newname in files_dest) == True:
+                        print(f"Ese nombre ya existe en {destino}")
+                        newname = input('nuevo nombre: ',)
+
                     ext = f.split('.')[1]
-                    newname = input("Nuevo nombre: ")
-                    os.rename(f'{destino}/{f}', f'{destino}/{newname}.{ext}')
-                    print('---------- Renombrado ----------')
+                    renombrar(f'{destino}/{f}', f'{destino}/{newname}.{ext}')
                     return newname
+                    print('---------- Renombrado ----------')
                 print('---------- Movido ----------')
+                    
+
+def renombrar(file, newname):
+    os.rename(file,newname)
+
+def mover(file_origen, destino):
+    shutil.move(file_origen, destino)
 
 
-def tasa(file):
+def tasa_prompt(file):
     print('Primero definamos un par de parámetros...')
-    tasa = 1 # Voy a guardar uno de cada 'tasa' frames
-    radio = 150 # Radio de la arena (en milímetros)
-    stop = 500 # Tiempo de reposo entre giros (en milisegundos)
     step = int(input('Escriba el step (en milisegundos): '))
+    stop = int(input('Escriba el STOP (en milisegundos): '))
     left = int(input("Escriba la calibración 'left': "))
     right = int(input("Escriba la calibración 'right': "))
+
+    prompt_ok = input(f'¿Son step:{step}, stop:{stop}, left:{left}, right:{right} correctos? [y/n] ')
+
+    if prompt_ok.lower() == 'y':
+        tasa(file, step, stop, left, right)
+    elif prompt_ok.lower() == 'n':
+        print('Inténtelo de nuevo con los parámetros correctos')
+        tasa_prompt(file)
+    else:
+        print('Ok, saliendo...')
+        exit()
+
+
+def tasa(file, step, stop, left, right):
+    tasa = 1 # Voy a guardar uno de cada 'tasa' frames
+    radio = 150 # Radio de la arena (en milímetros)
 
     ############### CREO LA CARPETA DE FRAMES ###############
     frames_dir = f'{repo_dir}/Media/{file}(frames)'
@@ -249,6 +277,33 @@ def data(file):
         exit()
 
 
-x = mover(origen=camara_dir, destino=media_dir)
-myTasa(x)
-myData(x)
+
+
+
+
+
+
+
+
+
+prompt_init = input('¿Voy a ejecutar mover+tasa+data? [y/n] ')
+
+if prompt_init.lower() == 'y':
+    x = cam2pc(origen=camara_dir, destino=media_dir)
+    #si camara dir es vacio no seguir!
+    tasa_prompt(x)
+    data(x)
+
+else:
+    prompt = input('¿Que quiere ejecutar? '
+        '1: tasa, 2: data, 3:tasa+data')
+    archivo = input('Archivo para ejecutar: ')
+    if prompt.lower() == '1':
+        tasa_prompt(archivo)
+    elif prompt.lower() == '2':
+        data(archivo)
+    elif prompt.lower() == '3':
+        tasa_prompt(archivo)
+        data(archivo)
+
+#x = mover(origen=camara_dir, destino=media_dir)
