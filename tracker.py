@@ -201,6 +201,8 @@ def data(file):
     ############### SELECCIONO LOS CENTROS ###############
     frame0_fname = f'{frames_dir}/{frames[0]}'
     img_frame0 = cv2.imread(frame0_fname)
+    print(f'Seleccionemos los ojalillos.'
+          f'Primero el izquierdo (más cerca del jumper) y luego el derecho.')
     i_l, j_l, i_r, j_r = clicks(img_frame0)
 
     ############### LEVANTO LA DATA ###############
