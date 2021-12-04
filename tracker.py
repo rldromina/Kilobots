@@ -118,6 +118,66 @@ def graficador_circulos(img, circles):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+def detector_ojal(file, frame, th, e, ojal_guess, i_l, j_l, i_r, j_r):
+    frames_dir = f'{repo_dir}/Media/{file}(frames)'
+
+    # Cargo la imagen de un frame en escala de grises
+    img = cv2.imread(f'{frames_dir}/{frame}', 0)
+    # Recorto entornos cuadrados alrededor de los centros de los ojalillos
+    img_l = img[i_l-e:i_l+e+1, j_l-e:j_l+e+1]
+    img_r = img[i_r-e:i_r+e+1, j_r-e:j_r+e+1]
+    # Busco los ojalillos en esos recortes
+    circles_l = cv2.HoughCircles(
+        img_l, cv2.HOUGH_GRADIENT, 1, 20, param1=50, param2=th, 
+        minRadius=ojal_guess-1, maxRadius=ojal_guess+1)
+    circles_r = cv2.HoughCircles(
+        img_r, cv2.HOUGH_GRADIENT, 1, 20, param1=50, param2=th, 
+        minRadius=ojal_guess-1, maxRadius=ojal_guess+1)
+
+    # Posiciones LOCALES (i0,j0) de los ojalillos en esos recortes
+    i0_l, j0_l = circles_l[0, 0, 1], circles_l[0, 0, 0]
+    i0_r, j0_r = circles_r[0, 0, 1], circles_r[0, 0, 0]
+    # Recupero las posiciones GLOBALES (i,j) a partir de las locales
+    i_l, j_l = i_l + (i0_l-e), j_l + (j0_l-e)
+    i_r, j_r = i_r + (i0_r-e), j_r + (j0_r-e)
+
+    return i_l, j_l, i_r, j_r, circles_l, circles_r
+
+def clicks(img_frame):
+    global clicks
+    clicks = []
+
+    def callback(event, x, y, flags, param):
+        if event == 1:
+            clicks.append((x,y))
+
+    cv2.namedWindow('presione ESC para cerrar')
+    cv2.setMouseCallback('presione ESC para cerrar', callback)
+    while True:
+        cv2.imshow('presione ESC para cerrar', img_frame)    
+        k = cv2.waitKey(1)
+        if k == 27:
+            break
+    cv2.destroyAllWindows()
+
+    i_l, j_l = clicks[0][1], clicks[0][0] # Centro del ojalillo izquierdo
+    i_r, j_r = clicks[1][1], clicks[1][0] # Centro del ojalillo derecho
+
+    return i_l, j_l, i_r, j_r
+
+def confirmacion(file, frame, th, e, ojal_guess):
+
+    frames_dir = f'{repo_dir}/Media/{file}(frames)'
+    # Cargo la imagen de un frame en escala de grises
+    img = cv2.imread(f'{frames_dir}/{frame}')
+
+    i_l, j_l, i_r, j_r = clicks(img)
+    i_l, j_l, i_r, j_r, circles_l, circles_r = detector_ojal(
+        file, frame, th, e, ojal_guess, i_l, j_l, i_r, j_r)
+
+    graficador_circulos(img, [[[j_l, i_l, ojal_guess]]])
+    graficador_circulos(img, [[[j_r, i_r, ojal_guess]]])
+
 def data(file):
     ############### PREPARO LOS FRAMES ###############
     repo_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots')
@@ -141,25 +201,7 @@ def data(file):
     ############### SELECCIONO LOS CENTROS ###############
     frame0_fname = f'{frames_dir}/{frames[0]}'
     img_frame0 = cv2.imread(frame0_fname)
-
-    global clicks
-    clicks = []
-
-    def callback(event, x, y, flags, param):
-        if event == 1:
-            clicks.append((x,y))
-
-    cv2.namedWindow('presione ESC para cerrar')
-    cv2.setMouseCallback('presione ESC para cerrar', callback)
-    while True:
-        cv2.imshow('presione ESC para cerrar', img_frame0)    
-        k = cv2.waitKey(1)
-        if k == 27:
-            break
-    cv2.destroyAllWindows()
-
-    i_l, j_l = clicks[0][1], clicks[0][0] # Centro del ojalillo izquierdo
-    i_r, j_r = clicks[1][1], clicks[1][0] # Centro del ojalillo derecho
+    i_l, j_l, i_r, j_r = clicks(img_frame0)
 
     ############### LEVANTO LA DATA ###############
     # Acá guardo la evolución temporal de las posiciones
@@ -170,19 +212,20 @@ def data(file):
 
     for c, fr in enumerate(frames):
         print(f'\n--------------- {fr} ({(c+1)/N:.0%}) ---------------')
-        # Cargo la imagen de un frame en escala de grises
-        img = cv2.imread(f'{frames_dir}/{fr}', 0)
-        # Recorto entornos cuadrados alrededor de los centros de los ojalillos
-        img_l = img[i_l-e:i_l+e+1, j_l-e:j_l+e+1]
-        img_r = img[i_r-e:i_r+e+1, j_r-e:j_r+e+1]
-        # Busco los ojalillos en esos recortes
-        circles_l = cv2.HoughCircles(
-            img_l, cv2.HOUGH_GRADIENT, 1, 20, param1=50, param2=th, 
-            minRadius=ojal_guess-1, maxRadius=ojal_guess+1)
-        circles_r = cv2.HoughCircles(
-            img_r, cv2.HOUGH_GRADIENT, 1, 20, param1=50, param2=th, 
-            minRadius=ojal_guess-1, maxRadius=ojal_guess+1)
+        
+        i_l, j_l, i_r, j_r, circles_l, circles_r = detector_ojal(
+            file, fr, th, e, ojal_guess, i_l, j_l, i_r, j_r)
 
+        print(f'i_l = {i_l}, j_l = {j_l}        i_r = {i_r}, j_r = {j_r}')
+        # Guardo las posiciones de los centros y el instante de tiempo
+        I_L[c], J_L[c] = i_l, j_l
+        I_R[c], J_R[c] = i_r, j_r
+        TIME[c] = int(fr[6:-4]) / meta['fps']
+        # Esto es necesario para poder recortar en la siguiente iteración (!)
+        i_l, j_l = int(np.around(i_l)), int(np.around(j_l))
+        i_r, j_r = int(np.around(i_r)), int(np.around(j_r))
+
+        
         if (circles_l is None) or (circles_r is None):
             # Para identificar el error, muestro las imágenes de
             # los frames 'current' (el que falló) y 'last' (exitoso)
@@ -195,25 +238,10 @@ def data(file):
             graficador_circulos(img_current, circles_last)
             exit()
 
-        # Posiciones LOCALES (i0,j0) de los ojalillos en esos recortes
-        i0_l, j0_l = circles_l[0, 0, 1], circles_l[0, 0, 0]
-        i0_r, j0_r = circles_r[0, 0, 1], circles_r[0, 0, 0]
-        # Recupero las posiciones GLOBALES (i,j) a partir de las locales
-        i_l, j_l = i_l + (i0_l-e), j_l + (j0_l-e)
-        i_r, j_r = i_r + (i0_r-e), j_r + (j0_r-e)
-        print(f'i_l = {i_l}, j_l = {j_l}        i_r = {i_r}, j_r = {j_r}')
-        # Guardo las posiciones de los centros y el instante de tiempo
-        I_L[c], J_L[c] = i_l, j_l
-        I_R[c], J_R[c] = i_r, j_r
-        TIME[c] = int(fr[6:-4]) / meta['fps']
-        # Esto es necesario para poder recortar en la siguiente iteración (!)
-        i_l, j_l = int(np.around(i_l)), int(np.around(j_l))
-        i_r, j_r = int(np.around(i_r)), int(np.around(j_r))
-
     D = np.sqrt((I_L-I_R)**2 + (J_L-J_R)**2) # Distancia entre ojalillos
 
     print(f"\n--------------- Resumen para '{file}.mp4' ---------------")
-    print(f'Cargamos {N} frames de dimensión matricial {img.shape}:\n'
+    print(f'Cargamos {N} frames de dimensión matricial {img_frame0.shape}:\n'
           f'{frames[0]}, {frames[1]}, {frames[2]}, ... , {frames[-1]}')
     print('Distancias entre ojalillos...')
     print(f'...promedio = {np.mean(D):.2f} px')
@@ -267,7 +295,7 @@ def detector_arena(file):
         print('\nOk, inténtelo de nuevo con otro guess para el radio de la arena.')
         detector_arena(file)
 
-
+repo_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots')
 camara_dir = r'/run/user/1000/gvfs/mtp:host=Sony_E5606_YT911BA6SB/Almacenamiento interno/DCIM/OpenCamera/Kilobot'
 media_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots/Media')
 
@@ -276,8 +304,8 @@ x = os.path.expanduser('~/Escritorio/origen')
 y = '64_74'
 #tasa_prompt()
 #data(y)
-detector_arena(y)
-
+#detector_arena(y)
+error(file=y, frame='frame_25.jpg', th=20, e=16, ojal_guess=6)
 
 """
 prompt_init = input('¿Voy a ejecutar mover+tasa+data? [y/n] ')
