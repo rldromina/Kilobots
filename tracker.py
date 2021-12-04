@@ -4,10 +4,6 @@ import pandas as pd
 import cv2
 import shutil
 
-repo_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots') 
-camara_dir = r'/run/user/1000/gvfs/mtp:host=Sony_E5606_YT911BA6SB/Almacenamiento interno/DCIM/OpenCamera/Kilobot'
-media_dir = f'{repo_dir}/Media'
-
 def mover_y_renombrar(origen, destino):
     """Si el usuario lo desea, los archivos alojados en 'origen'
     son movidos a 'destino' y renombrados.
@@ -35,7 +31,8 @@ def tasa(file, step, stop, left, right):
     tasa = 1 # Voy a guardar uno de cada 'tasa' frames
     radio = 150 # Radio de la arena (en milímetros)
 
-    ############### CREO LA CARPETA DE FRAMES ###############
+    ############### CREO LA CARPETA DE FRAMES ###############4
+    repo_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots')
     frames_dir = f'{repo_dir}/Media/{file}(frames)'
     try:
         os.makedirs(frames_dir)
@@ -123,6 +120,7 @@ def graficador_circulos(img, circles):
 
 def data(file):
     ############### PREPARO LOS FRAMES ###############
+    repo_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots')
     frames_dir = f'{repo_dir}/Media/{file}(frames)'
     frames_ = os.listdir(frames_dir)
     frames = sorted(frames_, key=lambda x: int(x[6:-4])) # Porque 'frame_###.jpg'
@@ -232,6 +230,7 @@ def data(file):
     print(f'\n¡Bien! La evolución temporal de los ojalillos se guardó en {data_fname}')
 
 def detector_arena(file):
+    repo_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots')
     frames_dir = f'{repo_dir}/Media/{file}(frames)'
     frames_ = os.listdir(frames_dir)
     frame0_fname = f'{frames_dir}/{frames_[0]}'
@@ -267,6 +266,10 @@ def detector_arena(file):
     elif prompt.lower() == 'n':
         print('\nOk, inténtelo de nuevo con otro guess para el radio de la arena.')
         detector_arena(file)
+
+
+camara_dir = r'/run/user/1000/gvfs/mtp:host=Sony_E5606_YT911BA6SB/Almacenamiento interno/DCIM/OpenCamera/Kilobot'
+media_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots/Media')
 
 x = os.path.expanduser('~/Escritorio/origen')
 #mover_y_renombrar(origen=x, destino=media_dir)
