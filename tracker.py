@@ -303,11 +303,11 @@ media_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots/Media')
 
 x = os.path.expanduser('~/Escritorio/origen')
 #mover_y_renombrar(origen=x, destino=media_dir)
-y = '64_74'
-#tasa_prompt()
+y = '65_72_3000_100_1hr_c'
+tasa_prompt()
 #data(y)
 #detector_arena(y)
-error(file=y, frame='frame_25.jpg', th=20, e=16, ojal_guess=6)
+#error(file=y, frame='frame_25.jpg', th=20, e=16, ojal_guess=6)
 
 """
 prompt_init = input('¿Voy a ejecutar mover+tasa+data? [y/n] ')
