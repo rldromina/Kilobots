@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-plt.style.use('../estilo_latex.mplstyle')
+plt.style.use('estilo_latex.mplstyle')
 from scipy.optimize import curve_fit
 import cv2
 
@@ -508,7 +508,7 @@ def hexbug(lista, carpeta):
     plt.show()
 
 my_path = '/home/tom/Escritorio/Repositorios/Kilobots/Data'
-my_file = '64_71'
+my_file = '65_74_2000_100_cali'
 #graficador_arena(my_path, my_file)
 evolucion_temporal(my_path, [my_file], VAR='ALPHA_UN')
 

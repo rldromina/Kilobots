@@ -5,7 +5,7 @@
 
 font.size : 20
 
-text.usetex         : True 
+text.usetex         : False
 text.latex.preamble : \usepackage{amsmath, sansmathfonts, siunitx} \sisetup{detect-all, separate-uncertainty=true, per-mode=symbol}
 
 axes.grid           : True

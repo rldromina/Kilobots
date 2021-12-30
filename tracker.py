@@ -20,7 +20,7 @@ def mover_y_renombrar(origen, destino):
                 print('---------- Movido ----------')
                 prompt_rn = input(f'¿Desea renombrar a {file}? [y/n]: ')
                 if prompt_rn.lower() == 'y':
-                    newname = input('Nuevo nombre: ')
+                    newname = input('Nuevo nombre: ').rstrip()
                     ext = file.split('.')[1]
                     while (f'{newname}.{ext}' in os.listdir(destino)) == True:
                         newname = input('Ese nombre ya está en uso, pruebe con otro: ')
@@ -83,7 +83,7 @@ def tasa(file, step, stop, left, right):
     meta.to_csv(meta_fname, index=False)
 
 def tasa_prompt():
-    file = input('Escriba el nombre del archivo: ')
+    file = input('Escriba el nombre del archivo: ').rstrip()
     step = int(input('Escriba el step (en milisegundos): '))
     stop = int(input('Escriba el STOP (en milisegundos): '))
     left = int(input("Escriba la calibración 'left': "))
@@ -97,6 +97,8 @@ def tasa_prompt():
     elif prompt_ok.lower() == 'n':
         print('\nOk, inténtelo de nuevo con los valores correctos...')
         tasa_prompt()
+
+    return file
 
 def graficador_circulos(img, circles):
     """Grafica en la imagen 'img' de tres canales, los centros 
@@ -193,7 +195,7 @@ def data(file):
 
     meta['ojal_guess'] = ojal_guess = 6 # Guess para el radio de los ojalillos (en píxeles)
     meta['e'] = e = 16 # 2*e = lado del cuadrado que voy a recortar (en píxeles)
-    meta['th'] = th = 13 # Umbral 'param2' del método HoughCircles
+    meta['th'] = th = 10 # Umbral 'param2' del método HoughCircles
 
     meta.to_csv(meta_fname, index=False)
     print(f'Los metadatos asociados a esta medición son...\n{meta}')
@@ -226,7 +228,6 @@ def data(file):
         # Esto es necesario para poder recortar en la siguiente iteración (!)
         i_l, j_l = int(np.around(i_l)), int(np.around(j_l))
         i_r, j_r = int(np.around(i_r)), int(np.around(j_r))
-
         
         if (circles_l is None) or (circles_r is None):
             # Para identificar el error, muestro las imágenes de
@@ -301,32 +302,36 @@ repo_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots')
 camara_dir = r'/run/user/1000/gvfs/mtp:host=Sony_E5606_YT911BA6SB/Almacenamiento interno/DCIM/OpenCamera/Kilobot'
 media_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots/Media')
 
-x = os.path.expanduser('~/Escritorio/origen')
+#x = os.path.expanduser('~/Escritorio/origen')
 #mover_y_renombrar(origen=x, destino=media_dir)
-y = '65_72_3000_100_1hr_c'
-tasa_prompt()
+#y = '65_72_3000_100_cali'
+#tasa_prompt()
 #data(y)
 #detector_arena(y)
-#error(file=y, frame='frame_25.jpg', th=20, e=16, ojal_guess=6)
+#confirmacion(file=y, frame='frame_82.jpg', th=10, e=16, ojal_guess=6)
 
-"""
+
 prompt_init = input('¿Voy a ejecutar mover+tasa+data? [y/n] ')
 
 if prompt_init.lower() == 'y':
-    x = mover_y_renombrar(origen=camara_dir, destino=media_dir)
+    mover_y_renombrar(origen=camara_dir, destino=media_dir)
     #si camara dir es vacio no seguir!
-    tasa_prompt(x)
+    x = tasa_prompt()
     data(x)
+    detector_arena(x)
 
 else:
     prompt = input('¿Que quiere ejecutar? '
-        '1: tasa, 2: data, 3:tasa+data')
+        '1: tasa, 2: data+arena, 3:arena, 4:tasa+data')
     archivo = input('Archivo para ejecutar: ')
     if prompt.lower() == '1':
-        tasa_prompt(archivo)
+        tasa_prompt()
     elif prompt.lower() == '2':
         data(archivo)
+        detector_arena(archivo)
     elif prompt.lower() == '3':
-        tasa_prompt(archivo)
+        detector_arena(archivo)
+    elif prompt.lower() == '4':
+        tasa_prompt()
         data(archivo)
-"""
+
