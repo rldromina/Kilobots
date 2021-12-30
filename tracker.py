@@ -302,13 +302,16 @@ media_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots/Media')
 
 #x = os.path.expanduser('~/Escritorio/origen')
 #mover_y_renombrar(origen=x, destino=media_dir)
-#y = '65_72_3000_100_1hr_b'
+y = '65_74_2000_100_1hr'
 #tasa_prompt()
 #data(y)
-#detector_arena(y)
+detector_arena(y)
+data(y)
 #confirmacion(file=y, frame='frame_19533.jpg', th=12, e=16, ojal_guess=6)
 
 prompt_init = input('¿Voy a ejecutar mover+tasa+data? [y/n] ')
+
+'''
 
 if prompt_init.lower() == 'y':
     x = mover_y_renombrar(origen=camara_dir, destino=media_dir)
@@ -329,4 +332,4 @@ else:
     elif prompt.lower() == '3':
         tasa_prompt(archivo)
         data(archivo)
-
+'''
