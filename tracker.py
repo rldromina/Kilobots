@@ -300,23 +300,23 @@ repo_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots')
 camara_dir = r'/run/user/1000/gvfs/mtp:host=Sony_E5606_YT911BA6SB/Almacenamiento interno/DCIM/OpenCamera/Kilobot'
 media_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots/Media')
 
-x = os.path.expanduser('~/Escritorio/origen')
+#x = os.path.expanduser('~/Escritorio/origen')
 #mover_y_renombrar(origen=x, destino=media_dir)
-y = '65_72_3000_100_1hr_b'
+#y = '65_72_3000_100_1hr_b'
 #tasa_prompt()
 #data(y)
-detector_arena(y)
+#detector_arena(y)
 #confirmacion(file=y, frame='frame_19533.jpg', th=12, e=16, ojal_guess=6)
 
-
-"""
 prompt_init = input('¿Voy a ejecutar mover+tasa+data? [y/n] ')
 
 if prompt_init.lower() == 'y':
     x = mover_y_renombrar(origen=camara_dir, destino=media_dir)
     #si camara dir es vacio no seguir!
-    tasa_prompt(x)
+    tasa_prompt()
+    detector_arena(x)
     data(x)
+    
 
 else:
     prompt = input('¿Que quiere ejecutar? '
@@ -329,5 +329,4 @@ else:
     elif prompt.lower() == '3':
         tasa_prompt(archivo)
         data(archivo)
-"""
 

@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-plt.style.use('../estilo_latex.mplstyle')
+#plt.style.use('estilo_latex.mplstyle')
 from scipy.optimize import curve_fit
 import cv2
 
