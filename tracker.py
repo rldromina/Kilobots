@@ -1,3 +1,4 @@
+
 import os
 import numpy as np
 import pandas as pd
@@ -20,7 +21,7 @@ def mover_y_renombrar(origen, destino):
                 print('---------- Movido ----------')
                 prompt_rn = input(f'¿Desea renombrar a {file}? [y/n]: ')
                 if prompt_rn.lower() == 'y':
-                    newname = input('Nuevo nombre: ')
+                    newname = input('Nuevo nombre: ').rstrip()
                     ext = file.split('.')[1]
                     while (f'{newname}.{ext}' in os.listdir(destino)) == True:
                         newname = input('Ese nombre ya está en uso, pruebe con otro: ')
@@ -83,7 +84,7 @@ def tasa(file, step, stop, left, right):
     meta.to_csv(meta_fname, index=False)
 
 def tasa_prompt():
-    file = input('Escriba el nombre del archivo: ')
+    file = input('Escriba el nombre del archivo: ').rstrip()
     step = int(input('Escriba el step (en milisegundos): '))
     stop = int(input('Escriba el STOP (en milisegundos): '))
     left = int(input("Escriba la calibración 'left': "))
@@ -97,6 +98,8 @@ def tasa_prompt():
     elif prompt_ok.lower() == 'n':
         print('\nOk, inténtelo de nuevo con los valores correctos...')
         tasa_prompt()
+
+    return file
 
 def graficador_circulos(img, circles):
     """Grafica en la imagen 'img' de tres canales, los centros 
@@ -165,7 +168,6 @@ def clicks(img_frame):
 
     return i_l, j_l, i_r, j_r
 
-
 def confirmacion(file, frame, th, e, ojal_guess):
 
     frames_dir = f'{repo_dir}/Media/{file}(frames)'
@@ -173,12 +175,11 @@ def confirmacion(file, frame, th, e, ojal_guess):
     img = cv2.imread(f'{frames_dir}/{frame}')
 
     i_l, j_l, i_r, j_r = clicks(img)
-
-    i_l, j_l, i_r, j_r, circles_l, circles_r = detector_ojal(file, frame, th, e, ojal_guess, i_l, j_l, i_r, j_r)
+    i_l, j_l, i_r, j_r, circles_l, circles_r = detector_ojal(
+        file, frame, th, e, ojal_guess, i_l, j_l, i_r, j_r)
 
     graficador_circulos(img, [[[j_l, i_l, ojal_guess]]])
     graficador_circulos(img, [[[j_r, i_r, ojal_guess]]])
-
 
 def data(file):
     ############### PREPARO LOS FRAMES ###############
@@ -195,7 +196,7 @@ def data(file):
 
     meta['ojal_guess'] = ojal_guess = 6 # Guess para el radio de los ojalillos (en píxeles)
     meta['e'] = e = 16 # 2*e = lado del cuadrado que voy a recortar (en píxeles)
-    meta['th'] = th = 12 # Umbral 'param2' del método HoughCircles
+    meta['th'] = th = 10 # Umbral 'param2' del método HoughCircles
 
     meta.to_csv(meta_fname, index=False)
     print(f'Los metadatos asociados a esta medición son...\n{meta}')
@@ -203,6 +204,8 @@ def data(file):
     ############### SELECCIONO LOS CENTROS ###############
     frame0_fname = f'{frames_dir}/{frames[0]}'
     img_frame0 = cv2.imread(frame0_fname)
+    print(f'Seleccionemos los ojalillos.'
+          f'Primero el izquierdo (más cerca del jumper) y luego el derecho.')
     i_l, j_l, i_r, j_r = clicks(img_frame0)
 
     ############### LEVANTO LA DATA ###############
@@ -215,7 +218,8 @@ def data(file):
     for c, fr in enumerate(frames):
         print(f'\n--------------- {fr} ({(c+1)/N:.0%}) ---------------')
         
-        i_l, j_l, i_r, j_r, circles_l, circles_r = detector_ojal(file, fr, th, e, ojal_guess, i_l, j_l, i_r, j_r)
+        i_l, j_l, i_r, j_r, circles_l, circles_r = detector_ojal(
+            file, fr, th, e, ojal_guess, i_l, j_l, i_r, j_r)
 
         print(f'i_l = {i_l}, j_l = {j_l}        i_r = {i_r}, j_r = {j_r}')
         # Guardo las posiciones de los centros y el instante de tiempo
@@ -225,7 +229,6 @@ def data(file):
         # Esto es necesario para poder recortar en la siguiente iteración (!)
         i_l, j_l = int(np.around(i_l)), int(np.around(j_l))
         i_r, j_r = int(np.around(i_r)), int(np.around(j_r))
-
         
         if (circles_l is None) or (circles_r is None):
             # Para identificar el error, muestro las imágenes de
@@ -302,34 +305,34 @@ media_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots/Media')
 
 #x = os.path.expanduser('~/Escritorio/origen')
 #mover_y_renombrar(origen=x, destino=media_dir)
-y = '65_74_2000_100_1hr'
+#y = '65_72_3000_100_cali'
 #tasa_prompt()
 #data(y)
-detector_arena(y)
-data(y)
-#confirmacion(file=y, frame='frame_19533.jpg', th=12, e=16, ojal_guess=6)
+#detector_arena(y)
+#confirmacion(file=y, frame='frame_82.jpg', th=10, e=16, ojal_guess=6)
+
 
 prompt_init = input('¿Voy a ejecutar mover+tasa+data? [y/n] ')
 
-'''
-
 if prompt_init.lower() == 'y':
-    x = mover_y_renombrar(origen=camara_dir, destino=media_dir)
+    mover_y_renombrar(origen=camara_dir, destino=media_dir)
     #si camara dir es vacio no seguir!
-    tasa_prompt()
-    detector_arena(x)
+    x = tasa_prompt()
     data(x)
-    
+    detector_arena(x)
 
 else:
     prompt = input('¿Que quiere ejecutar? '
-        '1: tasa, 2: data, 3:tasa+data')
+        '1: tasa, 2: data+arena, 3:arena, 4:tasa+data')
     archivo = input('Archivo para ejecutar: ')
     if prompt.lower() == '1':
-        tasa_prompt(archivo)
+        tasa_prompt()
     elif prompt.lower() == '2':
         data(archivo)
+        detector_arena(archivo)
     elif prompt.lower() == '3':
-        tasa_prompt(archivo)
+        detector_arena(archivo)
+    elif prompt.lower() == '4':
+        tasa_prompt()
         data(archivo)
-'''
+
