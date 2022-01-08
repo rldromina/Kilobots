@@ -24,8 +24,6 @@ def unbounded(x):
             y[i:] = y[i:] - 2*np.pi
     return y
 
-def lineal(x, m): return m*x
-
 def german(path, file):
     # Cargo los .csv que tienen toda la información necesaria
     meta = pd.read_csv(f'{path}/{file}(csv)/{file}_meta.csv')
@@ -417,12 +415,15 @@ def curvas_dcm_fit(lista, carpeta):
     y_diff = 88 * x_diff
     ax.fill_between(x_diff, y_diff, 1e6, color='r', alpha=0.1, zorder=2)
 
+    def modelo(x, m):
+        return m*x
+
     for video in lista[1:]:
         todo = german(video, carpeta)
         t, x, y = todo['T'], todo['X_MM'], todo['Y_MM']
         tdcm, dcm = DCM(t, x, y)
         rng_fit = np.logical_and(tdcm>20, tdcm<80)
-        params = curve_fit(lineal, tdcm[rng_fit], dcm[rng_fit])
+        params = curve_fit(modelo, tdcm[rng_fit], dcm[rng_fit])
         [m,] = params[0]
         x_fit = tdcm
         y_fit = m * x_fit
@@ -506,14 +507,3 @@ def hexbug(lista, carpeta):
         ax.hist(v_phi, bins=30, edgecolor='k', zorder=2)
     ax.legend()
     plt.show()
-
-my_path = '/home/tom/Escritorio/Repositorios/Kilobots/Data'
-my_file = '65_74_2000_100_cali'
-#graficador_arena(my_path, my_file)
-evolucion_temporal(my_path, [my_file], VAR='ALPHA_UN')
-
-#videos = sorted([v for v in os.listdir(carpeta) if os.path.isdir(carpeta+v)])
-
-#histograma(videos, carpeta=folder, VAR='ALPHA')
-#temporal2(videos, carpeta=folder, VAR='ALPHA')
-#curvas_calibracion(videos, carpeta=folder)
