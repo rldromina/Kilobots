@@ -507,10 +507,10 @@ def hexbug(lista, carpeta):
     ax.legend()
     plt.show()
 
-my_path = '/home/tom/Escritorio/Repositorios/Kilobots/Data'
-my_file = '65_74_2000_100_cali'
+#my_path = '/home/tom/Escritorio/Repositorios/Kilobots/Data'
+#my_file = '65_74_2000_100_cali'
 #graficador_arena(my_path, my_file)
-evolucion_temporal(my_path, [my_file], VAR='ALPHA_UN')
+#evolucion_temporal(my_path, [my_file], VAR='ALPHA_UN')
 
 #videos = sorted([v for v in os.listdir(carpeta) if os.path.isdir(carpeta+v)])
 

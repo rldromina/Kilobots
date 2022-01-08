@@ -1,9 +1,22 @@
+import os, datetime
+from datetime import date
 
-import os
 import numpy as np
 import pandas as pd
+
 import cv2
 import shutil
+
+from importlib import reload
+
+import aux_tracker
+reload(aux_tracker)
+from aux_tracker import evolucion_temporal
+
+import tqdm
+import time
+
+today = date.today().strftime("%b-%d-%Y")
 
 def mover_y_renombrar(origen, destino):
     """Si el usuario lo desea, los archivos alojados en 'origen'
@@ -34,7 +47,7 @@ def tasa(file, step, stop, left, right):
 
     ############### CREO LA CARPETA DE FRAMES ###############4
     repo_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots')
-    frames_dir = f'{repo_dir}/Media/{file}(frames)'
+    frames_dir = f'{repo_dir}/Media/{today}/{file}(frames)'
     try:
         os.makedirs(frames_dir)
         print(f'Se creó {frames_dir}')
@@ -42,7 +55,7 @@ def tasa(file, step, stop, left, right):
         print(f'Ya existe {frames_dir}')
 
     ############### CARGO EL VIDEO Y EXTRAIGO SUS FRAMES ###############
-    video_fname = f'{repo_dir}/Media/{file}.mp4'
+    video_fname = f'{repo_dir}/Media/{today}/{file}.mp4'
     cap = cv2.VideoCapture(video_fname)
 
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -66,7 +79,7 @@ def tasa(file, step, stop, left, right):
     cap.release()
 
     ############### CREO LA CARPETA DE CSV's ###############
-    csv_dir = f'{repo_dir}/Data/{file}(csv)'
+    csv_dir = f'{repo_dir}/Data/{today}/{file}(csv)'
     try:
         os.makedirs(csv_dir)
         print(f'Se creó {csv_dir}')
@@ -122,7 +135,7 @@ def graficador_circulos(img, circles):
     cv2.destroyAllWindows()
 
 def detector_ojal(file, frame, th, e, ojal_guess, i_l, j_l, i_r, j_r):
-    frames_dir = f'{repo_dir}/Media/{file}(frames)'
+    frames_dir = f'{repo_dir}/Media/{today}/{file}(frames)'
 
     # Cargo la imagen de un frame en escala de grises
     img = cv2.imread(f'{frames_dir}/{frame}', 0)
@@ -170,7 +183,7 @@ def clicks(img_frame):
 
 def confirmacion(file, frame, th, e, ojal_guess):
 
-    frames_dir = f'{repo_dir}/Media/{file}(frames)'
+    frames_dir = f'{repo_dir}/Media/{today}/{file}(frames)'
     # Cargo la imagen de un frame en escala de grises
     img = cv2.imread(f'{frames_dir}/{frame}')
 
@@ -184,13 +197,13 @@ def confirmacion(file, frame, th, e, ojal_guess):
 def data(file):
     ############### PREPARO LOS FRAMES ###############
     repo_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots')
-    frames_dir = f'{repo_dir}/Media/{file}(frames)'
+    frames_dir = f'{repo_dir}/Media/{today}/{file}(frames)'
     frames_ = os.listdir(frames_dir)
     frames = sorted(frames_, key=lambda x: int(x[6:-4])) # Porque 'frame_###.jpg'
     N = len(frames)
 
     ############### IMPORTO Y ACTUALIZO LOS METADATOS ###############
-    csv_dir = f'{repo_dir}/Data/{file}(csv)'
+    csv_dir = f'{repo_dir}/Data/{today}/{file}(csv)'
     meta_fname = f'{csv_dir}/{file}_meta.csv'
     meta = pd.read_csv(meta_fname)
 
@@ -263,7 +276,7 @@ def data(file):
 
 def detector_arena(file):
     repo_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots')
-    frames_dir = f'{repo_dir}/Media/{file}(frames)'
+    frames_dir = f'{repo_dir}/Media/{today}/{file}(frames)'
     frames_ = os.listdir(frames_dir)
     frame0_fname = f'{frames_dir}/{frames_[0]}'
     img_frame0 = cv2.imread(frame0_fname)
@@ -285,7 +298,7 @@ def detector_arena(file):
         r_a = circles_a[0, 0, 2] # Radio de la arena
 
         ############### IMPORTO Y ACTUALIZO LA DATA ###############
-        csv_dir = f'{repo_dir}/Data/{file}(csv)'
+        csv_dir = f'{repo_dir}/Data/{today}/{file}(csv)'
         data_fname = f'{csv_dir}/{file}_data.csv'
         data = pd.read_csv(data_fname)
 
@@ -301,7 +314,7 @@ def detector_arena(file):
 
 repo_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots')
 camara_dir = r'/run/user/1000/gvfs/mtp:host=Sony_E5606_YT911BA6SB/Almacenamiento interno/DCIM/OpenCamera/Kilobot'
-media_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots/Media')
+media_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots/Media/')
 
 #x = os.path.expanduser('~/Escritorio/origen')
 #mover_y_renombrar(origen=x, destino=media_dir)
@@ -320,6 +333,7 @@ if prompt_init.lower() == 'y':
     x = tasa_prompt()
     data(x)
     detector_arena(x)
+    evolucion_temporal(f'{repo_dir}/Data/{today}', [x],VAR='ALPHA_UN')
 
 else:
     prompt = input('¿Que quiere ejecutar? '
@@ -331,8 +345,13 @@ else:
         data(archivo)
         detector_arena(archivo)
     elif prompt.lower() == '3':
-        detector_arena(archivo)
+        #detector_arena(archivo)
+        evolucion_temporal(f'{repo_dir}/Data/{today}', [archivo], VAR='ALPHA_UN')
     elif prompt.lower() == '4':
         tasa_prompt()
         data(archivo)
+
+
+
+
 
