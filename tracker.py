@@ -15,7 +15,7 @@ class fc:
     END = '\033[0m'
     BOLD = '\033[1m'
 
-# Funciones auxiliares:
+# Funciones auxiliares
 
 def detector_ojal(img0, i_l, j_l, i_r, j_r, e, ojal, th):
     i_l, j_l = int(i_l), int(j_l)
@@ -86,7 +86,7 @@ def prompt_valores():
     else:
         return prompt_valores()
 
-# Funciones principales:
+# Funciones principales
 
 def mover_y_renombrar():
     print(f'\n{fc.BLUE}Vamos a mover y renombrar lo que hay en la cámara{fc.END}\n')
@@ -169,8 +169,8 @@ def frames(file):
     meta_filename = f'{csv_dir}/{file}_meta.csv'
     meta.to_csv(meta_filename, index=False)
 
-    print(f'{fc.GREEN}\n¡Bien! Se extrajeron todos los frames '
-          f'y los metadatos se guardaron como {fc.BOLD}{meta_filename}{fc.END}')
+    print(f'{fc.GREEN}\n¡Bien! Se extrajeron todos los frames y los '
+          f'metadatos se guardaron como {fc.BOLD}{meta_filename}{fc.END}')
 
 def data(file):
     print(f'\n{fc.BLUE}Vamos a trackear la trayectoria en {fc.BOLD}{file}.mp4{fc.END}\n')
@@ -320,6 +320,8 @@ def prueba_th(file):
     i_l, j_l = i_l + (i0_l-e), j_l + (j0_l-e)
     i_r, j_r = i_r + (i0_r-e), j_r + (j0_r-e)
     graficador_circulos(img, [[[j_l, i_l, r_l], [j_r, i_r, r_r]]])
+
+# Selección de funciones
 
 def main():
     funct = {

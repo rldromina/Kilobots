@@ -5,7 +5,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 plt.style.use('estilo_latex.mplstyle')
 from scipy.optimize import curve_fit
-import cv2
 
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
@@ -25,34 +24,34 @@ def unbounded(x):
     return y
 
 def german(path, file):
-    # Cargo los .csv que tienen toda la información necesaria
+    # Importo los CSV's que tienen toda la información necesaria
     meta = pd.read_csv(f'{path}/{file}(csv)/{file}_meta.csv')
     data = pd.read_csv(f'{path}/{file}(csv)/{file}_data.csv')
 
     # Instantes de tiempo
     T = data['TIME'].to_numpy()
-    # Posiciones (matriciales, en píxeles) de los ojalillos
+    # Posiciones (matriciales, en px) de los ojalillos
     I_L, J_L = data['I_L'].to_numpy(), data['J_L'].to_numpy()
     I_R, J_R = data['I_R'].to_numpy(), data['J_R'].to_numpy()
-    # Posición (matricial, en píxeles) del centro de la arena
+    # Posición (matricial, en px) del centro de la arena
     i_a, j_a = data['i_a'].to_numpy()[0], data['j_a'].to_numpy()[0]
-    # Radio de la arena (en píxeles y en milímetros)
+    # Radio de la arena (en px y en mm)
     r_a, radio = data['r_a'].to_numpy()[0], meta['radio'].to_numpy()[0]
-    # Cuántos píxeles representan un milímetro
-    mm = r_a / radio
 
-    # A partir de ahora, todas las coordenadas van a tener
-    # al centro de la arena (i_a, j_a) como origen...
-    # Coordenadas (cartesianas, en milímetros) de los ojalillos
+    # Todas las coordenadas van a tener a (i_a, j_a) como origen...
+
+    # Cuántos px representan un mm
+    mm = r_a / radio
+    # Coordenadas (cartesianas, en mm) de los ojalillos
     X_L, Y_L = (J_L-j_a) / mm, -(I_L-i_a) / mm
     X_R, Y_R = (J_R-j_a) / mm, -(I_R-i_a) / mm
     # Vector LR que va del ojalillo Left al Right
     LR_x, LR_y = X_R - X_L, Y_R - Y_L
     # Vector N de orientación (= vector LR rotado 90° CCW)
     N_x, N_y = -LR_y, LR_x
-    # Coordenadas (cartesianas, en milímetros) del punto medio
+    # Coordenadas (cartesianas, en mm) del punto medio
     X, Y = X_L + 0.5*LR_x, Y_L + 0.5*LR_y
-    # Coordenadas (polares, en milímetros y radianes) del punto medio
+    # Coordenadas (polares, en mm y rad) del punto medio
     R, PHI = np.sqrt(X**2 + Y**2), np.arctan2(Y, X)
     # Ángulo ALPHA de orientación en [-pi, pi]
     ALPHA = np.arctan2(N_y, N_x)
@@ -62,7 +61,6 @@ def german(path, file):
     R_hat_x, R_hat_y = X / R, Y / R
     PHI_hat_x, PHI_hat_y = -R_hat_y, R_hat_x
 
-    # Todo lo que voy a necesitar...
     todo = {
         'T': T,
         'X': X, 'Y': Y,
@@ -70,8 +68,9 @@ def german(path, file):
         'ALPHA': ALPHA, 'ALPHA_UN': ALPHA_UN,
         'R_hat_x': R_hat_x, 'R_hat_y': R_hat_y,
         'PHI_hat_x': PHI_hat_x, 'PHI_hat_y': PHI_hat_y,
-        'radio': radio, 'mm': mm,
-        'step': meta['step'], 'left': meta['left'], 'right': meta['right'],
+        'r_a': r_a, 'radio': radio, 'mm': mm,
+        'left': meta['left'][0], 'right': meta['right'][0],
+        'step': meta['step'][0], 'stop': meta['stop'][0],
     }
     return todo
 
@@ -94,11 +93,11 @@ def graficador_arena(path, file):
     ax.plot(3*[x[0]], [y[0]-16, y[0], y[0]+16], '-o', c='lime', ms=3, zorder=5)
     # ---------- Escala ----------
     x0, y0 = 110, -160
-    rule = 50
-    ax.plot([x0, x0+rule], [y0, y0], c='k') # ------
+    ruler = 50
+    ax.plot([x0, x0+ruler], [y0, y0], c='k') # ------
     ax.plot([x0, x0], [y0-5, y0+5], c='k') # |-
-    ax.plot([x0+rule, x0+rule], [y0-5, y0+5], c='k') # -|
-    ax.text(x0+(rule/2), y0+10, fr'$\SI{{{rule}}}{{\mm}}$', ha='center')
+    ax.plot([x0+ruler, x0+ruler], [y0-5, y0+5], c='k') # -|
+    ax.text(x0+(ruler/2), y0+10, fr'\SI{{{ruler}}}{{\mm}}', ha='center')
     # ---------- Colorbar temporal ----------
     cmap = mpl.cm.autumn
     norm = mpl.colors.Normalize(vmin=t[0], vmax=t[-1]/60)
@@ -117,16 +116,43 @@ def evolucion_temporal(path, file_list, VAR):
     for file in file_list:
         todo = german(path, file)
         t, var = todo['T'], todo[VAR]
-        step = todo['step'][0]
-        left, right = todo['left'][0], todo['right'][0]
-
-        info_step = fr'step=\SI{{{step}}}{{\ms}}'
-        info_cali = f'left={left}, right={right}'
-        ax.plot(t, var, label=info_step)
-        ax.set_xlabel(r'tiempo $t$ [\si{\s}]')
-        ax.set_ylabel(r'orientación $\alpha(t)$ [\si{\radian}]')
+        ax.plot(t, var, 'o', label=file)
+    ax.set_xlabel(r'tiempo $t$ [\si{\s}]')
+    ax.set_ylabel(r'orientación $\alpha(t)$ [\si{\radian}]')
     ax.legend()
     plt.show()
+
+def ajuste(path, file):
+
+    def modelo(x, y0, m):
+        return y0 + m * x
+
+    todo = german(path, file)
+    t, alpha = todo['T'], todo['ALPHA_UN']
+
+    #s_min = 78.63
+    #s_max = 80.72
+
+    s_min = 81.56
+    s_max = 83.79
+
+    xdata = t[np.logical_and(s_min<t, t<s_max)]
+    ydata = alpha[np.logical_and(s_min<t, t<s_max)]
+
+    popt, pcov = curve_fit(modelo, xdata, ydata)
+    print(f"Velocidad angular: {popt[1]:.2f} rad/s")
+
+    y0 = popt[0]
+    m = popt[1]
+
+    fig, ax = plt.subplots(figsize=(9.6,4.8))
+    ax.plot(xdata, ydata, 'o')
+    y_ = modelo(xdata, y0, m)
+    ax.plot(xdata, y_)
+    plt.show()
+
+
+
 
 def temporal(lista, carpeta, VAR='ALPHA'):
     fig, ax = plt.subplots(figsize=(9.6, 4.8))
@@ -253,22 +279,6 @@ def DCMA(t, x, T=60*10):
         dc = (x[i:i+len(tdcm)]-x[i])**2
         dcm = dcm + dc/len(teff)
     return tdcm, dcm
-
-def circles(video, i, th=13):
-    img_jpg = home + 'Data/' + video + '/frames/' + 'frame_' + str(i) + '.jpg'
-    img = cv2.imread(img_jpg, 0)
-    circles = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 20, param1=50, 
-                               param2=th, minRadius=5, maxRadius=7)
-    print('Los círculos detectados son:')
-    print(circles)
-    circles = np.uint16(np.around(circles))
-    cimg = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-    for i in circles[0,:]:
-        cv2.circle(cimg, (i[0],i[1]), i[2], (0,255,0), 2)
-        cv2.circle(cimg, (i[0],i[1]), 2, (0,0,255), 3)
-    cv2.imshow(video, cimg)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
 
 def histograma(lista, carpeta, VAR):
     fig, ax = plt.subplots()
@@ -507,3 +517,20 @@ def hexbug(lista, carpeta):
         ax.hist(v_phi, bins=30, edgecolor='k', zorder=2)
     ax.legend()
     plt.show()
+
+my_path = os.path.expanduser('~/Escritorio/Repositorios/Kilobots/Data')
+my_file = '63_73_3000_100_cali'
+#graficador_arena(my_path, my_file)
+evolucion_temporal(my_path, [my_file], VAR='ALPHA_UN')
+
+#ajuste(my_path, my_file)
+
+# Cosas de aux_tracker:
+#my_path = '/home/tom/Escritorio/Repositorios/Kilobots/Data'
+#my_file = '65_74_2000_100_cali'
+#graficador_arena(my_path, my_file)
+#evolucion_temporal(my_path, [my_file], VAR='ALPHA_UN')
+#videos = sorted([v for v in os.listdir(carpeta) if os.path.isdir(carpeta+v)])
+#histograma(videos, carpeta=folder, VAR='ALPHA')
+#temporal2(videos, carpeta=folder, VAR='ALPHA')
+#curvas_calibracion(videos, carpeta=folder)
