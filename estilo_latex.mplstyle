@@ -3,7 +3,8 @@
 # plt.style.use('/path/donde/esta/el/style')
 # Requiere una instalación de LaTeX (texlive-full)
 
-font.size : 20
+#font.size : 20
+font.size : 10
 
 text.usetex         : False
 text.latex.preamble : \usepackage{amsmath, sansmathfonts, siunitx} \sisetup{detect-all, separate-uncertainty=true, per-mode=symbol}
