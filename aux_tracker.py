@@ -153,7 +153,6 @@ def ajuste(path, file):
 
 
 
-
 def temporal(lista, carpeta, VAR='ALPHA'):
     fig, ax = plt.subplots(figsize=(9.6, 4.8))
     
