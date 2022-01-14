@@ -1,28 +1,22 @@
 import os
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 #plt.style.use('../estilo_latex.mplstyle')
 from matplotlib.gridspec import GridSpec
 import math
 import random
 import itertools
-import cv2
-
 
 plt.rc('font', size=12)
 fps = 30
 tasa = 1
 frames = int(fps/tasa) # Cuántos frames respresentan 1 segundo
 
-
-def importo(directory, file):
-    path = os.path.expanduser('~/Escritorio/Repos/Kilobots/Data/') + directory + '/' 
-    data_fname = path + file + '/' + file + '_data.csv'
-    meta_fname = path + file + '/' + file + '_meta.csv'
-    data = np.genfromtxt(data_fname, delimiter=',', names=True)
-    meta = np.genfromtxt(meta_fname, delimiter=',', names=True)
+def importo(path, file):
+    meta = pd.read_csv(f'{path}/{file}(csv)/{file}_meta.csv')
+    data = pd.read_csv(f'{path}/{file}(csv)/{file}_data.csv')
     return data, meta
-
 
 def umbral(x):
     """A los elementos del array 'x' que son menores al valor
@@ -33,14 +27,12 @@ def umbral(x):
     y = np.where(x<th, 0, 1)
     return y
 
-
 def on_off(x):
     """Fracciones de tiempo con el LED prendido (on, 1) y apagado (off, 0).
     """
     on = np.count_nonzero(x==1) / len(x)
     off = np.count_nonzero(x==0) / len(x)
     return on, off
-
 
 def autocorrelacion(x):
     """Calcula la autocorrelación R de una señal x(t).
@@ -51,7 +43,6 @@ def autocorrelacion(x):
     maximo = np.max(auto)
     R = auto / maximo
     return R
-
 
 def contador_consecutividades(x):
     groups = itertools.groupby(x)
@@ -68,7 +59,6 @@ def contador_consecutividades(x):
     count = [np.logical_and(lenght>n-e, lenght<n+e).sum() for n in N]
     return count
 
-
 def moneda(tiradas):
     """Tiro la moneda 'tiradas' veces. Una tirada por segundo, el 
     cual está representado por 'frames' puntos en el vector 't' de tiempos.
@@ -81,7 +71,6 @@ def moneda(tiradas):
         seg = frames * i
         x[seg:seg+frames] = coin
     return t, x
-
 
 def estadistica_moneda(realizaciones, tiradas):
     """Tiro la moneda 'tiradas' veces. Esto es una realización que repito
@@ -96,10 +85,9 @@ def estadistica_moneda(realizaciones, tiradas):
     media = [np.mean(k) for k in itertools.zip_longest(*todas, fillvalue=0)]
     return media
 
+def graficador(path, file):
 
-def graficador(directory, file):
-
-    data, meta = importo(directory, file)
+    data, meta = importo(path, file)
     t = data['TIME']
     I = data['INT']
 
@@ -137,5 +125,5 @@ def graficador(directory, file):
     
     plt.show()
 
-
-graficador('Moneda', 'seed_hard_1h')
+my_path = os.path.expanduser(f'~/Escritorio/Repositorios/Kilobots/Data/Moneda')
+graficador(my_path, '30min')
