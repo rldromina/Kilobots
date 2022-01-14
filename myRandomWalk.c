@@ -12,7 +12,6 @@
 int new_motion = CW;
 uint8_t my_seed;
 
-
 void setup() {
     my_seed = rand_hard();
     rand_seed(my_seed);
