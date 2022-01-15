@@ -6,6 +6,11 @@ import cv2
 import shutil
 from tqdm import tqdm
 
+#from importlib import reload
+import aux_tracker
+#reload(aux_tracker)
+from aux_tracker import evolucion_temporal,suma
+
 class fc:
     BLUE = '\033[94m'
     CYAN = '\033[96m'
@@ -323,28 +328,43 @@ def prueba_th(file):
 
 # Selección de funciones
 
+def foo():
+    return
+
 def main():
+    
+    #J = lambda file: evolucion_temporal(my_path, [file], VAR='ALPHA_UN')  
     funct = {
         '0': mover_y_renombrar,
         '1': frames,
         '2': data,
         '3': arena,
+        '8': foo,
         '9': prueba_th,
     }
-
     for k, v in funct.items(): print(f'{k} : {v.__name__}')
     prompt = input('\n¿Qué funciones quiere ejecutar?: ')
-
     check = False
     for i in prompt:
         if i == '0':
-            funct[i]
-        elif (i != '0') and (check == False):
+            funct[i]()
+        elif (i != '0') and (i != '8') and (check == False):
             file = input('\n¿Qué video quiere analizar?: ')
             funct[i](file)
             check = True
+        elif i == '8':
+            pass
         else:
             funct[i](file)
 
+
 if __name__ == "__main__":
     main()
+    prompt = input('Quiere graficar la evolucion temporal: ')
+    if prompt.lower() == 'y':
+        my_path = os.path.expanduser('~/Escritorio/Repositorios/Kilobots/Data')
+        file = input('\n¿Qué video quiere analizar?: ')
+        file_list = [file]
+        evolucion_temporal(my_path, file_list, VAR='ALPHA_UN')
+    else:
+        print('Chau')

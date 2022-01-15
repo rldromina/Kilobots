@@ -517,10 +517,15 @@ def hexbug(lista, carpeta):
     ax.legend()
     plt.show()
 
+def suma(x,*y):
+    x=5
+    return print(len([x]))
+
+
 my_path = os.path.expanduser('~/Escritorio/Repositorios/Kilobots/Data')
-my_file = '63_73_3000_100_cali'
+my_file = '65_72_3000_100_calib'
 #graficador_arena(my_path, my_file)
-evolucion_temporal(my_path, [my_file], VAR='ALPHA_UN')
+#evolucion_temporal(my_path, [my_file], VAR='ALPHA_UN')
 
 #ajuste(my_path, my_file)
 
