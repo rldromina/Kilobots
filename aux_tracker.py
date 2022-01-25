@@ -3,12 +3,14 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-plt.style.use('estilo_latex.mplstyle')
-from scipy.optimize import curve_fit
 
+from scipy.optimize import curve_fit
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
-from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 from matplotlib.legend_handler import HandlerLineCollection, HandlerTuple
+
+plt.style.use('estilo_latex.mplstyle')
+# 'Annulus' viene con matplotlib 3.5 (pip3 install -U matplotlib, para actualizar)
+# https://svgutils.readthedocs.io/en/latest/tutorials/publication_quality_figures.html
 
 def unbounded(x):
     """La sucesión de ángulos 'x' en [-pi, pi] pasa a ser una
@@ -23,35 +25,37 @@ def unbounded(x):
             y[i:] = y[i:] - 2*np.pi
     return y
 
-def german(path, file):
-    # Importo los CSV's que tienen toda la información necesaria
-    meta = pd.read_csv(f'{path}/{file}(csv)/{file}_meta.csv')
-    data = pd.read_csv(f'{path}/{file}(csv)/{file}_data.csv')
+def german(csv_dir):
+    file = os.path.basename(csv_dir)
+    data_path = os.path.join(csv_dir, f'{file}_data.csv')
+    meta_path = os.path.join(csv_dir, f'{file}_meta.csv')
+    data = pd.read_csv(data_path)
+    meta = pd.read_csv(meta_path)
 
-    # Instantes de tiempo
-    T = data['TIME'].to_numpy()
-    # Posiciones (matriciales, en px) de los ojalillos
-    I_L, J_L = data['I_L'].to_numpy(), data['J_L'].to_numpy()
-    I_R, J_R = data['I_R'].to_numpy(), data['J_R'].to_numpy()
-    # Posición (matricial, en px) del centro de la arena
-    i_a, j_a = data['i_a'].to_numpy()[0], data['j_a'].to_numpy()[0]
+    TIME = data['TIME'].to_numpy()
+    # Posiciones (en px) de los ojalillos
+    X_L, Y_L = data['X_L'].to_numpy(), data['Y_L'].to_numpy()
+    X_R, Y_R = data['X_R'].to_numpy(), data['Y_R'].to_numpy()
+    # Posición (en px) del centro de la arena
+    x_a, y_a = meta['x_a'][0], meta['y_a'][0]
     # Radio de la arena (en px y en mm)
-    r_a, radio = data['r_a'].to_numpy()[0], meta['radio'].to_numpy()[0]
+    r_a, radio = meta['r_a'][0], meta['radio'][0]
 
-    # Todas las coordenadas van a tener a (i_a, j_a) como origen...
+    # A partir de ahora, el centro de la arena pasa a ser el origen de
+    # coordenadas, invierto el sentido del eje 'y' y expreso todo en mm
 
     # Cuántos px representan un mm
     mm = r_a / radio
-    # Coordenadas (cartesianas, en mm) de los ojalillos
-    X_L, Y_L = (J_L-j_a) / mm, -(I_L-i_a) / mm
-    X_R, Y_R = (J_R-j_a) / mm, -(I_R-i_a) / mm
+    # Coordenadas cartesianas de los ojalillos
+    X_L, Y_L = (X_L-x_a) / mm, -(Y_L-y_a) / mm
+    X_R, Y_R = (X_R-x_a) / mm, -(Y_R-y_a) / mm
     # Vector LR que va del ojalillo Left al Right
     LR_x, LR_y = X_R - X_L, Y_R - Y_L
     # Vector N de orientación (= vector LR rotado 90° CCW)
     N_x, N_y = -LR_y, LR_x
-    # Coordenadas (cartesianas, en mm) del punto medio
+    # Coordenadas cartesianas del punto medio
     X, Y = X_L + 0.5*LR_x, Y_L + 0.5*LR_y
-    # Coordenadas (polares, en mm y rad) del punto medio
+    # Coordenadas polares del punto medio
     R, PHI = np.sqrt(X**2 + Y**2), np.arctan2(Y, X)
     # Ángulo ALPHA de orientación en [-pi, pi]
     ALPHA = np.arctan2(N_y, N_x)
@@ -62,42 +66,33 @@ def german(path, file):
     PHI_hat_x, PHI_hat_y = -R_hat_y, R_hat_x
 
     todo = {
-        'T': T,
-        'X': X, 'Y': Y,
-        'R': R, 'PHI': PHI,
+        'TIME': TIME, 'X': X, 'Y': Y, 'R': R, 'PHI': PHI,
         'ALPHA': ALPHA, 'ALPHA_UN': ALPHA_UN,
         'R_hat_x': R_hat_x, 'R_hat_y': R_hat_y,
         'PHI_hat_x': PHI_hat_x, 'PHI_hat_y': PHI_hat_y,
         'r_a': r_a, 'radio': radio, 'mm': mm,
         'left': meta['left'][0], 'right': meta['right'][0],
         'step': meta['step'][0], 'stop': meta['stop'][0],
-    }
+        }
     return todo
 
-def graficador_arena(path, file):
-    todo = german(path, file)
+def graficador_arena(csv_dir):
+    todo = german(csv_dir)
     t, x, y = todo['T'], todo['X'], todo['Y']
     r = todo['radio']
 
-    fig, ax = plt.subplots(figsize=(7,6))
-    # ---------- Arenas ----------
-    ax.add_patch(plt.Circle((0,0), r+9, fill=False, lw=18, color='#d19556'))
-    ax.add_patch(plt.Circle((0,0), r-1, fill=False, lw=3, color='k'))
-    #ax.add_patch(plt.Circle((0,0), r, fill=False, lw=.8, color='lime'))
+    fig, ax = plt.subplots(figsize=(7, 6))
     # ---------- Trayectoria ----------
     ax.scatter(x, y, c=range(len(x)), cmap='autumn', s=1)
+    # ---------- Arena ----------
+    ax.add_patch(mpl.patches.Annulus(xy=(0, 0), r=r+20, width=20, fc='#d19556'))
+    ax.add_patch(mpl.patches.Annulus(xy=(0, 0), r=r, width=5, fc='k'))
     # ---------- Posición inicial del Kilobot ----------
-    #kb = mpl.image.imread('/home/tom/Escritorio/dibujo.png')
-    #img_kb = OffsetImage(kb, zoom=0.45)
-    #ax.add_artist(AnnotationBbox(img_kb, (x[0],y[0]), frameon=False))
     ax.plot(3*[x[0]], [y[0]-16, y[0], y[0]+16], '-o', c='lime', ms=3, zorder=5)
     # ---------- Escala ----------
-    x0, y0 = 110, -160
-    ruler = 50
-    ax.plot([x0, x0+ruler], [y0, y0], c='k') # ------
-    ax.plot([x0, x0], [y0-5, y0+5], c='k') # |-
-    ax.plot([x0+ruler, x0+ruler], [y0-5, y0+5], c='k') # -|
-    ax.text(x0+(ruler/2), y0+10, fr'\SI{{{ruler}}}{{\mm}}', ha='center')
+    x0, y0, ruler = 160, -160, 50
+    ax.plot([x0-ruler, x0], [y0, y0], c='k', lw=3)
+    ax.text(x0-(ruler/2), y0+5, fr'\SI{{{ruler}}}{{\mm}}', ha='center')
     # ---------- Colorbar temporal ----------
     cmap = mpl.cm.autumn
     norm = mpl.colors.Normalize(vmin=t[0], vmax=t[-1]/60)
@@ -111,19 +106,22 @@ def graficador_arena(path, file):
     ax.axis('off')
     plt.show()
 
-def evolucion_temporal(path, file_list, VAR):
-    fig, ax = plt.subplots(figsize=(9.6,4.8))
-    for file in file_list:
-        todo = german(path, file)
-        t, var = todo['T'], todo[VAR]
-        ax.plot(t, var, 'o', label=file)
+
+
+
+
+def evolucion_temporal(csv_dir_list):
+    fig, ax = plt.subplots(figsize=(9.6, 4.8))
+    for file_dir in csv_dir_list:
+        todo = german(file_dir)
+        t, alpha_un = todo['T'], todo['ALPHA_UN']
+        ax.plot(t, alpha_un, 'o')
     ax.set_xlabel(r'tiempo $t$ [\si{\s}]')
     ax.set_ylabel(r'orientación $\alpha(t)$ [\si{\radian}]')
     ax.legend()
     plt.show()
 
 def ajuste(path, file):
-
     def modelo(x, y0, m):
         return y0 + m * x
 
@@ -132,7 +130,6 @@ def ajuste(path, file):
 
     #s_min = 78.63
     #s_max = 80.72
-
     s_min = 81.56
     s_max = 83.79
 
@@ -150,8 +147,6 @@ def ajuste(path, file):
     y_ = modelo(xdata, y0, m)
     ax.plot(xdata, y_)
     plt.show()
-
-
 
 def temporal(lista, carpeta, VAR='ALPHA'):
     fig, ax = plt.subplots(figsize=(9.6, 4.8))
@@ -517,18 +512,6 @@ def hexbug(lista, carpeta):
     ax.legend()
     plt.show()
 
-def suma(x,*y):
-    x=5
-    return print(len([x]))
-
-
-my_path = os.path.expanduser('~/Escritorio/Repositorios/Kilobots/Data')
-my_file = '65_72_3000_100_calib'
-#graficador_arena(my_path, my_file)
-#evolucion_temporal(my_path, [my_file], VAR='ALPHA_UN')
-
-#ajuste(my_path, my_file)
-
 # Cosas de aux_tracker:
 #my_path = '/home/tom/Escritorio/Repositorios/Kilobots/Data'
 #my_file = '65_74_2000_100_cali'
@@ -538,3 +521,10 @@ my_file = '65_72_3000_100_calib'
 #histograma(videos, carpeta=folder, VAR='ALPHA')
 #temporal2(videos, carpeta=folder, VAR='ALPHA')
 #curvas_calibracion(videos, carpeta=folder)
+
+repo_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots')
+file = '65_72_3000_100_calib'
+csv_dir = os.path.join(repo_dir, 'Data', file)
+
+graficador_arena(csv_dir)
+#evolucion_temporal([file_dir], 'ALPHA_UN')
