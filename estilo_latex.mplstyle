@@ -1,12 +1,11 @@
 # Cargar este style como...
 # import matplotlib.pyplot as plt
 # plt.style.use('/path/donde/esta/el/style')
-# Requiere una instalación de LaTeX (texlive-full)
+# Requiere de una instalación de LaTeX (texlive-full)
 
-#font.size : 20
-font.size : 10
+font.size : 20
 
-text.usetex         : False
+text.usetex         : True
 text.latex.preamble : \usepackage{amsmath, sansmathfonts, siunitx} \sisetup{detect-all, separate-uncertainty=true, per-mode=symbol}
 
 axes.grid           : True
