@@ -199,13 +199,13 @@ def TODO(video_path):
           f'max = {np.amax(D):.2f} px (n° {np.argmax(D)})')
 
     data = {
-        'TIME': TIME, 'I_L': Y_L, 'J_L': X_L, 'I_R': Y_R, 'J_R': X_R
+        'TIME': TIME, 'X_L': X_L, 'Y_L': Y_L, 'X_R': X_R, 'Y_R': Y_R,
         }
     meta = {
         'left': left, 'right': right, 'step': step, 'stop': stop,
         'fps': fps, 'frame_count': frame_count, 'segundos': segundos,
         'e': e, 'param1': p1, 'param2': p2, 'ojal': ojal,
-        'radio': 150, 'i_a': y_a, 'j_a': x_a, 'r_a': r_a,
+        'radio': 150, 'x_a': x_a, 'y_a': y_a, 'r_a': r_a,
         }
     return data, meta
 
