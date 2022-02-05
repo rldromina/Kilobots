@@ -8,8 +8,8 @@ from scipy.optimize import curve_fit
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 from matplotlib.legend_handler import HandlerLineCollection, HandlerTuple
 
-plt.style.use('estilo_latex.mplstyle')
-# 'Annulus' viene con matplotlib 3.5 (pip3 install -U matplotlib, para actualizar)
+#plt.style.use('estilo_latex.mplstyle')
+# 'Annulus' viene con matplotlib 3.5+ ('pip3 install -U matplotlib' para actualizar)
 # https://svgutils.readthedocs.io/en/latest/tutorials/publication_quality_figures.html
 
 def unbounded(x):
@@ -26,12 +26,16 @@ def unbounded(x):
     return y
 
 def german(csv_dir):
+    '''A partir de los dos CSVs de data y metadatos alojados en el
+    directorio 'csv_dir', calcula y guarda en un diccionario todas
+    las magnitudes que eventualmente se pueden llegar a necesitar.
+    '''
     file = os.path.basename(csv_dir)
     data_path = os.path.join(csv_dir, f'{file}_data.csv')
     meta_path = os.path.join(csv_dir, f'{file}_meta.csv')
     data = pd.read_csv(data_path)
     meta = pd.read_csv(meta_path)
-
+    
     TIME = data['TIME'].to_numpy()
     # Posiciones (en px) de los ojalillos
     X_L, Y_L = data['X_L'].to_numpy(), data['Y_L'].to_numpy()
@@ -46,39 +50,63 @@ def german(csv_dir):
 
     # Cuántos px representan un mm
     mm = r_a / radio
-    # Coordenadas cartesianas de los ojalillos
-    X_L, Y_L = (X_L-x_a) / mm, -(Y_L-y_a) / mm
-    X_R, Y_R = (X_R-x_a) / mm, -(Y_R-y_a) / mm
-    # Vector LR que va del ojalillo Left al Right
-    LR_x, LR_y = X_R - X_L, Y_R - Y_L
-    # Vector N de orientación (= vector LR rotado 90° CCW)
-    N_x, N_y = -LR_y, LR_x
+    # Vectores posición L y R de los ojalillos
+    L_x, L_y = (X_L-x_a) / mm, -(Y_L-y_a) / mm
+    R_x, R_y = (X_R-x_a) / mm, -(Y_R-y_a) / mm
+    # Vector D de distancia entre ojalillos (L->R)
+    D_x, D_y = R_x - L_x, R_y - L_y
+    # Vector N de orientación (= vector D rotado 90° CCW)
+    N_x, N_y = -D_y, D_x
     # Coordenadas cartesianas del punto medio
-    X, Y = X_L + 0.5*LR_x, Y_L + 0.5*LR_y
+    X, Y = L_x + 0.5*D_x, L_y + 0.5*D_y
     # Coordenadas polares del punto medio
     R, PHI = np.sqrt(X**2 + Y**2), np.arctan2(Y, X)
     # Ángulo ALPHA de orientación en [-pi, pi]
     ALPHA = np.arctan2(N_y, N_x)
     # Ángulo ALPHA_UN de orientación no acotado que 'acumula' las vueltas
     ALPHA_UN = unbounded(ALPHA)
-    # Versores radial R_hat y angular PHI_hat
-    R_hat_x, R_hat_y = X / R, Y / R
-    PHI_hat_x, PHI_hat_y = -R_hat_y, R_hat_x
 
     todo = {
         'TIME': TIME, 'X': X, 'Y': Y, 'R': R, 'PHI': PHI,
         'ALPHA': ALPHA, 'ALPHA_UN': ALPHA_UN,
-        'R_hat_x': R_hat_x, 'R_hat_y': R_hat_y,
-        'PHI_hat_x': PHI_hat_x, 'PHI_hat_y': PHI_hat_y,
         'r_a': r_a, 'radio': radio, 'mm': mm,
+        'file': file,
         'left': meta['left'][0], 'right': meta['right'][0],
         'step': meta['step'][0], 'stop': meta['stop'][0],
         }
     return todo
 
+def histograma_distancias(csv_dir):
+    file = os.path.basename(csv_dir)
+    data_path = os.path.join(csv_dir, f'{file}_data.csv')
+    data = pd.read_csv(data_path)
+
+    X_L, Y_L = data['X_L'].to_numpy(), data['Y_L'].to_numpy()
+    X_R, Y_R = data['X_R'].to_numpy(), data['Y_R'].to_numpy()
+
+    D = np.sqrt((X_L-X_R)**2 + (Y_L-Y_R)**2)
+    D_min, D_max, D_avg = np.amin(D), np.amax(D), np.mean(D)
+
+    print(f'\nDistancias entre ojalillos: AVG = {D_avg:.2f} px\n'
+          f'MIN = {D_min:.2f} px (frame n° {np.argmin(D)}) - '
+          f'MAX = {D_max:.2f} px (frame n° {np.argmax(D)})')
+
+    d_min, d_max = np.floor(D_min), np.ceil(D_max)
+    N = 4 # Divisiones por unidad en el bineado
+    my_bins = np.linspace(d_min, d_max, int(N*(d_max-d_min)+1))
+
+    fig, ax = plt.subplots()
+    ax.hist(D, bins=my_bins)
+    ax.set_title(file)
+    ax.set_xlabel(r'$d_\mathrm{ojalillos}$ (px)')
+    ax.set_ylabel(r'frecuencia')
+    ax.grid()
+    fig.tight_layout()
+    plt.show()
+
 def graficador_arena(csv_dir):
     todo = german(csv_dir)
-    t, x, y = todo['T'], todo['X'], todo['Y']
+    t, x, y = todo['TIME'], todo['X'], todo['Y']
     r = todo['radio']
 
     fig, ax = plt.subplots(figsize=(7, 6))
@@ -88,7 +116,8 @@ def graficador_arena(csv_dir):
     ax.add_patch(mpl.patches.Annulus(xy=(0, 0), r=r+20, width=20, fc='#d19556'))
     ax.add_patch(mpl.patches.Annulus(xy=(0, 0), r=r, width=5, fc='k'))
     # ---------- Posición inicial del Kilobot ----------
-    ax.plot(3*[x[0]], [y[0]-16, y[0], y[0]+16], '-o', c='lime', ms=3, zorder=5)
+    rkb = 16.5 # Radio del Kilobot (en mm)
+    ax.plot(3*[x[0]], [y[0]-rkb, y[0], y[0]+rkb], '-o', ms=3, zorder=5)
     # ---------- Escala ----------
     x0, y0, ruler = 160, -160, 50
     ax.plot([x0-ruler, x0], [y0, y0], c='k', lw=3)
@@ -106,87 +135,65 @@ def graficador_arena(csv_dir):
     ax.axis('off')
     plt.show()
 
-
-
-
-
-def evolucion_temporal(csv_dir_list):
+def evolucion_temporal(*csv_dir):
     fig, ax = plt.subplots(figsize=(9.6, 4.8))
-    for file_dir in csv_dir_list:
-        todo = german(file_dir)
-        t, alpha_un = todo['T'], todo['ALPHA_UN']
-        ax.plot(t, alpha_un, 'o')
+    for i in csv_dir:
+        todo = german(i)
+        file = todo['file']
+        t, un = todo['TIME'], todo['ALPHA_UN']
+        ax.plot(t, un, 'o', ms=2, label=file)
     ax.set_xlabel(r'tiempo $t$ [\si{\s}]')
     ax.set_ylabel(r'orientación $\alpha(t)$ [\si{\radian}]')
     ax.legend()
+    fig.tight_layout()
     plt.show()
 
-def ajuste(path, file):
+def ajuste(csv_dir):
     def modelo(x, y0, m):
         return y0 + m * x
 
-    todo = german(path, file)
-    t, alpha = todo['T'], todo['ALPHA_UN']
+    todo = german(csv_dir)
+    file = todo['file']
+    t, un = todo['TIME'], todo['ALPHA_UN']
 
-    #s_min = 78.63
-    #s_max = 80.72
-    s_min = 81.56
-    s_max = 83.79
+    registro = []
+    while True:
+        evolucion_temporal(csv_dir)
+        t_min = float(input('\nt mínimo (en s): '))
+        t_max = float(input('t máximo (en s): '))
 
-    xdata = t[np.logical_and(s_min<t, t<s_max)]
-    ydata = alpha[np.logical_and(s_min<t, t<s_max)]
+        seccion = np.logical_and(t_min<t, t<t_max)
+        xdata = t[seccion]
+        ydata = un[seccion]
+        popt, pcov = curve_fit(modelo, xdata, ydata)
+        vel_ang = popt[1]
 
-    popt, pcov = curve_fit(modelo, xdata, ydata)
-    print(f"Velocidad angular: {popt[1]:.2f} rad/s")
+        print(f'\u03C9 = {vel_ang:.2f} rad/s')
 
-    y0 = popt[0]
-    m = popt[1]
+        fig, ax = plt.subplots(figsize=(9.6, 4.8))
+        ax.plot(xdata, ydata, 'o', label=file)
+        y_fit = modelo(xdata, *popt)
+        ax.plot(xdata, y_fit, label='ajuste lineal')
+        ax.set_xlabel(r'tiempo $t$ [\si{\s}]')
+        ax.set_ylabel(r'orientación $\alpha(t)$ [\si{\radian}]')
+        ax.legend()
+        fig.tight_layout()
+        plt.show()
 
-    fig, ax = plt.subplots(figsize=(9.6,4.8))
-    ax.plot(xdata, ydata, 'o')
-    y_ = modelo(xdata, y0, m)
-    ax.plot(xdata, y_)
-    plt.show()
+        registro.append(((t_min, t_max), np.round(vel_ang, 2)))
+        prompt = input('\n¿Quiere ajustar sobre otra sección? [Y/n]: ')
+        if prompt.lower() == 'y' or prompt == '':
+            continue
+        else:
+            break
 
-def temporal(lista, carpeta, VAR='ALPHA'):
-    fig, ax = plt.subplots(figsize=(9.6, 4.8))
-    
-    axins = ax.inset_axes([0.07, 0.08, 0.27, 0.38])
-    mark_inset(ax, axins, loc1=1, loc2=3, ec='0.5', zorder=2.1)
-    axins.tick_params(labelsize=21)
-    axins.set_xlim(-5, 70)
-    axins.set_ylim(-10, 5)
-    
-    #labels = [r'potencia $%d$ CCW' % 64, r'potencia $%d$ CW' % 74]
-    #colores = ['red', 'blue']
-    for i, video in enumerate(lista):
-        todo = german(video, carpeta)
-        t, y = todo['T'], todo[VAR]
-        ax.plot(t, y, label=r'\SI{%d}{\ms}' % todo['step'])
-        #line, = ax.plot(t, y, c='C2')
-        axins.plot(t, y)
-        ax.set_xlabel(r'tiempo~$t$ [\si{\s}]')
-        ax.set_ylabel(r'orientación~$\alpha(t)$ [\si{\radian}]')
-    ax.legend(title=r'paso temporal', loc='upper left', bbox_to_anchor=(0.45, 0.62))
-    #ax.legend([line], [r'\SI{3000}{\ms}'], title=r'paso temporal')
-    plt.show()
+    print(f'\nSe hicieron {len(registro)} ajustes:\n{registro}')
+    return registro
 
-def temporal2(lista, carpeta, VAR='ALPHA'):
-    fig, ax = plt.subplots()
-    labels = [r'potencia $%d$ CCW' % 64, r'potencia $%d$ CW' % 78]
-    colores = ['red', 'blue']
-    lines = []
-    for i, video in enumerate(lista):
-        todo = german(video, carpeta)
-        t, y = todo['T'], todo[VAR]
-        rng = np.logical_and(t<=60, t>=38)
-        line = ax.scatter(t[rng], y[rng], c=colores[i], s=2, zorder=2)
-        lines.append(line)
-        ax.set_xlabel(r'tiempo~$t$ [\si{\s}]')
-        ax.set_ylabel(r'orientación~$\alpha(t)$ [\si{\radian}]')
-    ax.plot(55, 0.79, 'o', ms=40, mec='r', mfc='none', mew=3.5)
-    ax.legend(lines, labels, markerscale=4, handletextpad=-0.3)
-    plt.show()
+
+
+
+
 
 def velocidad_angular(video, carpeta, dt=1):
     todo = german(video, carpeta)
@@ -205,8 +212,8 @@ def velocidad_angular(video, carpeta, dt=1):
 def velocidad_sinstop(video, carpeta):
     todo = german(video, carpeta)
     t, x, y = todo['T'], todo['X_MM'], todo['Y_MM']
-    r_x, r_y = todo['R_hat_x'], todo['R_hat_y'] # Versor r
-    phi_x, phi_y = todo['PHI_hat_x'], todo['PHI_hat_y'] # Versor phi
+    r_x, r_y = todo['R_HAT_x'], todo['R_HAT_y'] # Versor r
+    phi_x, phi_y = todo['PHI_HAT_x'], todo['PHI_HAT_y'] # Versor phi
     stop = 500*(1e-3)
     paso = todo['step']*(1e-3)
     ciclos = 1
@@ -249,8 +256,8 @@ def velocidad(video, carpeta, dT=0.5):
         v_x[i] = dx / dt
         v_y[i] = dy / dt
         beta[i] = np.arctan2(v_y[i], v_x[i])
-    r_x, r_y = todo['R_hat_x'][:N], todo['R_hat_y'][:N] # Versor r
-    phi_x, phi_y = todo['PHI_hat_x'][:N], todo['PHI_hat_y'][:N] # Versor phi
+    r_x, r_y = todo['R_HAT_x'][:N], todo['R_HAT_y'][:N] # Versor r
+    phi_x, phi_y = todo['PHI_HAT_x'][:N], todo['PHI_HAT_y'][:N] # Versor phi
     v_r = v_x*r_x + v_y*r_y # Proyecto la velocidad sobre el versor r
     v_phi = v_x*phi_x + v_y*phi_y # Proyecto la velocidad sobre el versor phi
     v = np.sqrt(v_r**2 + v_phi**2) # Módulo de la velocidad
@@ -502,29 +509,5 @@ def corr(lista, carpeta):
     ax.legend()
     plt.show()
 
-def hexbug(lista, carpeta):
-    fig, ax = plt.subplots()
-    for video in lista:
-        todo = german(video, carpeta)
-        t0, v_r, v_phi, alpha, beta = velocidad(video, carpeta)
-        #ax.plot(t0, v_phi, label=r'%d' % todo['step'])
-        ax.hist(v_phi, bins=30, edgecolor='k', zorder=2)
-    ax.legend()
-    plt.show()
-
-# Cosas de aux_tracker:
-#my_path = '/home/tom/Escritorio/Repositorios/Kilobots/Data'
-#my_file = '65_74_2000_100_cali'
-#graficador_arena(my_path, my_file)
-#evolucion_temporal(my_path, [my_file], VAR='ALPHA_UN')
-#videos = sorted([v for v in os.listdir(carpeta) if os.path.isdir(carpeta+v)])
-#histograma(videos, carpeta=folder, VAR='ALPHA')
-#temporal2(videos, carpeta=folder, VAR='ALPHA')
-#curvas_calibracion(videos, carpeta=folder)
-
-repo_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots')
-file = '65_72_3000_100_calib'
-csv_dir = os.path.join(repo_dir, 'Data', file)
-
-graficador_arena(csv_dir)
-#evolucion_temporal([file_dir], 'ALPHA_UN')
+if __name__ == '__main__':
+    print('Se ejecuta AUX')
