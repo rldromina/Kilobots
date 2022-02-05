@@ -1,2 +1,2 @@
-step,stop,left,right,tasa,radio,fps,frames_count,segundos,ojal_guess,e,th
-2000,100,65,74,1,150,30.00387696528767,6573.0,219.07168888888887,6,16,10
+left,right,step,stop,fps,frame_count,segundos,radio
+65,74,2000,100,30.00387696528767,6573,219.07168888888887,150

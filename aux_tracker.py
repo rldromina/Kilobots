@@ -507,3 +507,11 @@ def hexbug(lista, carpeta):
         ax.hist(v_phi, bins=30, edgecolor='k', zorder=2)
     ax.legend()
     plt.show()
+
+
+
+
+my_path = '/home/romi/Escritorio/Repositorios/Kilobots/Data'
+my_file = '65_74_2000_100_1hr_c'
+#graficador_arena(my_path, my_file)
+#evolucion_temporal(my_path, [my_file], VAR='ALPHA_UN')
