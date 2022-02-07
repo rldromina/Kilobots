@@ -30,7 +30,7 @@ def prompt_valores():
             print(f'\n{fc.Y}Por favor, introduzca valores enteros{fc.END}')
             continue
         prompt = input('\n¿Son correctos estos valores? [Y/n]: ')
-        if prompt.lower() == 'y' or prompt == '':
+        if prompt.lower() in ['y', '']:
             break
         else:
             print(f'\n{fc.Y}Ok, inténtelo de nuevo{fc.END}')
@@ -105,7 +105,7 @@ def clickear(img):
         cv2.destroyAllWindows()
         print(f'\nPuntos clickeados:\n{clicks}')
         prompt = input(f'\n¿Son correctos estos clicks? [Y/n]: ')
-        if prompt.lower() == 'y' or prompt == '':
+        if prompt.lower() in ['y', '']:
             break
         else:
             print(f'\n{fc.Y}Ok, inténtelo de nuevo{fc.END}')
@@ -113,10 +113,42 @@ def clickear(img):
     return clicks
 
 def detector_ojal(img_gray, x, y, e, p1, p2, r):
-    gray = img_gray[y-e:y+e+1, x-e:x+e+1]
-    circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, dp=1, minDist=1,
+    recorte = img_gray[y-e:y+e+1, x-e:x+e+1]
+    circles = cv2.HoughCircles(recorte, cv2.HOUGH_GRADIENT, dp=1, minDist=1,
                                param1=p1, param2=p2, minRadius=r-1, maxRadius=r+1)
     return circles
+
+def trackeador(video_path, x_l, y_l, x_r, y_r, e, p1, p2, ojal):
+    cap = cv2.VideoCapture(video_path)
+    N = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+
+    l, r = np.array([x_l, y_l]), np.array([x_r, y_r])
+
+    X_L, Y_L = np.zeros(N), np.zeros(N)
+    X_R, Y_R = np.zeros(N), np.zeros(N)
+    TIME = np.zeros(N)
+    for i in tqdm(range(N)):
+        _, frame = cap.read()
+        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        circles_l = detector_ojal(frame_gray, *l, e, p1, p2, ojal)
+        circles_r = detector_ojal(frame_gray, *r, e, p1, p2, ojal)
+        try:
+            l = l + np.array(circles_l[0][0][:2]) - e
+            r = r + np.array(circles_r[0][0][:2]) - e
+            # Guardo las posiciones de los ojalillos y el instante de tiempo
+            X_L[i], Y_L[i] = l
+            X_R[i], Y_R[i] = r
+            TIME[i] = i / fps
+            # Los centros para los próximos recortes (!)
+            l, r = l.astype(int), r.astype(int)
+        except:
+            print(f'\n\n{fc.Y}Con p2={p2} no se detectó al menos '
+                  f'un ojalillo en el frame n° {i}{fc.END}')
+            cap.release()
+            return None
+    cap.release()
+    return TIME, X_L, Y_L, X_R, Y_R
 
 # Funciones principales
 
@@ -128,8 +160,7 @@ def mover_y_renombrar():
     origen_files = os.listdir(origen)
 
     if origen_files == []:
-        print(f'{fc.Y}\nNo hay nada en la cámara{fc.END}')
-        sys.exit()
+        sys.exit(f'{fc.R}\nNo hay nada en la cámara{fc.END}')
 
     print(f'\nHay {len(origen_files)} archivo(s) en la cámara:')
     for file in origen_files:
@@ -138,14 +169,14 @@ def mover_y_renombrar():
 
     for file in origen_files:
         prompt_mv = input(f'\n{fc.BOLD}¿Desea mover a {file}? [Y/n]: {fc.END}')
-        if prompt_mv.lower() == 'y' or prompt_mv == '':
+        if prompt_mv.lower() in ['y', '']:
             shutil.move(os.path.join(origen, file), destino)
             print(f'{fc.G}Movido{fc.END}')
             destino_files = os.listdir(destino)
 
             prompt_rn = input(f'{fc.BOLD}¿Desea renombrarlo? [Y/n]: {fc.END}')
-            if prompt_rn.lower() == 'y' or prompt_rn == '':
-                new = input('Nuevo nombre (con extensión): ').rstrip()
+            if prompt_rn.lower() in ['y', '']:
+                new = input('Nuevo nombre (CON EXTENSIÓN): ').rstrip()
                 while (new in destino_files) == True:
                     new = input('Ese nombre ya está en uso, pruebe con otro: ').rstrip()
                 current_path = os.path.join(destino, file)
@@ -154,77 +185,55 @@ def mover_y_renombrar():
                 print(f'{fc.G}Renombrado{fc.END}')
 
 def TODO(video_path):
-    p1, p2 = 50, 14 # Umbrales del método HoughCircles (más bajo, más sensible)
     ojal = 6 # Guess para el radio de los ojalillos (en px)
     e = 2 * ojal # 2*e = lado del cuadrado que voy a recortar (en px)
 
     cap = cv2.VideoCapture(video_path)
-    fps = cap.get(cv2.CAP_PROP_FPS)
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
     segundos = frame_count / fps
     _, frame0 = cap.read()
     cap.release()
 
-    print(f'\n{fc.B}Este video {os.path.basename(video_path)} fue grabado '
-          f'a {fps:.2f} fps, tiene {frame_count} frames de dimension matricial '
+    print(f'\n{fc.B}Este video {os.path.basename(video_path)} fue grabado a '
+          f'{fps:.2f} fps, tiene {frame_count} frames de dimensión matricial '
           f'{frame0.shape} y dura {segundos/60:.2f} minutos{fc.END}')
 
     print(f'\n{fc.BOLD}--- Introduzca la configuración ---{fc.END}')
     left, right, step, stop = prompt_valores()
 
     print(f'\n{fc.BOLD}--- Seleccione la arena ---{fc.END}')
-    arena = detector_arena(frame0)
-    x_a, y_a, r_a = arena
+    x_a, y_a, r_a = detector_arena(frame0)
 
     print(f'\n{fc.BOLD}--- Seleccione los ojalillos ---{fc.END}')
     clicks = clickear(frame0)
-    x_l, y_l = clicks[0]
-    x_r, y_r = clicks[1]
 
-    print(f'\n{fc.BOLD}--- Trackeando con un umbral p2 = {p2} ---{fc.END}\n')
-    X_L, Y_L = np.zeros(frame_count), np.zeros(frame_count)
-    X_R, Y_R = np.zeros(frame_count), np.zeros(frame_count)
-    TIME = np.zeros(frame_count)
-    cap = cv2.VideoCapture(video_path)
-    for i in tqdm(range(frame_count)):
-        _, frame = cap.read()
-        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        circles_l = detector_ojal(frame_gray, x_l, y_l, e, p1, p2, ojal)
-        circles_r = detector_ojal(frame_gray, x_r, y_r, e, p1, p2, ojal)
-        if (circles_l is None) or (circles_r is None):
-            print(f'\n\n{fc.R}¡Con (x_l = {x_l}, y_l = {y_l}) y (x_r = {x_r}, '
-                  f'y_r = {y_r}) no se detectó al menos un ojalillo '
-                  f'en el frame n° {i}! Saliendo...{fc.END}')
-            sys.exit()
-        # Coordenadas LOCALES (x0, y0) de los ojalillos en esos recortes
-        x0_l, y0_l, _ = circles_l[0][0]
-        x0_r, y0_r, _ = circles_r[0][0]
-        # Recupero las coordenadas GLOBALES (x, y) a partir de las locales
-        x_l, y_l = x_l + (x0_l-e), y_l + (y0_l-e)
-        x_r, y_r = x_r + (x0_r-e), y_r + (y0_r-e)
-        # Guardo las posiciones de los ojalillos y el instante de tiempo
-        X_L[i], Y_L[i] = x_l, y_l
-        X_R[i], Y_R[i] = x_r, y_r
-        TIME[i] = i / fps
-        # Los centros para los próximos recortes (!)
-        x_l, y_l = int(x_l), int(y_l)
-        x_r, y_r = int(x_r), int(y_r)
-    cap.release()
+    umbrales = list(range(13, 9, -1))
+    for p2 in umbrales:
+        print(f'\n{fc.BOLD}--- Trackeando con un umbral p2={p2} ---{fc.END}\n')
+        ret = trackeador(video_path, *clicks[0], *clicks[1], e, 50, p2, ojal)
+        if ret is None and p2 != umbrales[-1]:
+            continue
+        elif ret is None and p2 == umbrales[-1]:
+            sys.exit(f'\n{fc.R}Ninguno de los umbrales p2 en '
+                     f'{umbrales} resultó. Saliendo...{fc.END}')
+        else:
+            TIME, X_L, Y_L, X_R, Y_R = ret
+            break
 
     data = {
         'TIME': TIME, 'X_L': X_L, 'Y_L': Y_L, 'X_R': X_R, 'Y_R': Y_R,
         }
     meta = {
         'left': left, 'right': right, 'step': step, 'stop': stop,
-        'fps': fps, 'frame_count': frame_count, 'segundos': segundos,
-        'e': e, 'param1': p1, 'param2': p2, 'ojal': ojal,
-        'radio': 150, 'x_a': x_a, 'y_a': y_a, 'r_a': r_a,
+        'frame_count': frame_count, 'fps': fps, 'segundos': segundos,
+        'e': e, 'param2': p2, 'ojal': ojal,
+        'x_a': x_a, 'y_a': y_a, 'r_a': r_a, 'radio': 150,
         'video_path': video_path,
         }
     return data, meta
 
 def test_umbral(video_path):
-    p1 = 50
     ojal = 6
     e = 2 * ojal
 
@@ -236,33 +245,29 @@ def test_umbral(video_path):
 
     print(f'\n{fc.BOLD}--- Seleccione los ojalillos ---{fc.END}')
     clicks = clickear(frame)
-    x_l_, y_l_ = clicks[0]
-    x_r_, y_r_ = clicks[1]
+    l, r = np.array(clicks[0]), np.array(clicks[1])
 
     registro = []
     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     while True:
         p2 = int(input(f'\n{fc.BOLD}¿Con qué umbral p2 probamos?: {fc.END}'))
-        circles_l = detector_ojal(frame_gray, x_l_, y_l_, e, p1, p2, ojal)
-        circles_r = detector_ojal(frame_gray, x_r_, y_r_, e, p1, p2, ojal)
-        if (circles_l is None) or (circles_r is None):
-            print(f'{fc.Y}\nCon este umbral p2 = {p2} no se detectó '
-                  f'al menos un ojalillo. Inténtelo de nuevo{fc.END}')
+        circles_l = detector_ojal(frame_gray, *l, e, 50, p2, ojal)
+        circles_r = detector_ojal(frame_gray, *r, e, 50, p2, ojal)
+        try:
+            l_ = l + np.array(circles_l[0][0][:2]) - e
+            r_ = r + np.array(circles_r[0][0][:2]) - e
+            # Resultados de la detección
+            circulos = [[[*l_, circles_l[0][0][2]], [*r_, circles_r[0][0][2]]]]
+            registro.append((p2, circulos))
+            print(f'\nCírculos detectados:\n{circulos}')
+            graficador_circulos(frame, circulos)
+        except:
+            print(f'{fc.Y}\nCon p2={p2} no se detectó al menos '
+                  f'un ojalillo. Inténtelo de nuevo{fc.END}')
             registro.append((p2, None))
             continue
-        # Coordenadas LOCALES (x0, y0) de los ojalillos en esos recortes
-        x0_l, y0_l, r_l = circles_l[0][0]
-        x0_r, y0_r, r_r = circles_r[0][0]
-        # Recupero las coordenadas GLOBALES (x, y) a partir de las locales
-        x_l, y_l = x_l_ + (x0_l-e), y_l_ + (y0_l-e)
-        x_r, y_r = x_r_ + (x0_r-e), y_r_ + (y0_r-e)
-        # Resultados de la detección
-        circulos = [[[x_l, y_l, r_l], [x_r, y_r, r_r]]]
-        registro.append((p2, circulos))
-        print(f'\nCírculos detectados:\n{circulos}')
-        graficador_circulos(frame, circulos)
         prompt = input('\n¿Quiere hacer otra prueba? [Y/n]: ')
-        if prompt.lower() == 'y' or prompt == '':
+        if prompt.lower() in ['y', '']:
             continue
         else:
             break
@@ -283,8 +288,8 @@ def main():
         '6': graficador_arena,
         }
 
-    for key in myDict:
-        print(f'{fc.M}{fc.BOLD}{key}: {myDict[key].__name__}{fc.END}')
+    for k, v in myDict.items():
+        print(f'{fc.M}{fc.BOLD}{k}: {v.__name__}{fc.END}')
 
     prompt = input(f'\n{fc.BOLD}¿Qué función quiere ejecutar?: {fc.END}')
     while prompt not in myDict.keys():
@@ -297,8 +302,7 @@ def main():
         file = input(f'\n{fc.BOLD}¿Qué video quiere abrir?: {fc.END}')
         video_path = os.path.join(repo_dir, 'Media', f'{file}.mp4')
         if not os.path.isfile(video_path):
-            print(f'\n{fc.R}{video_path} no existe{fc.END}')
-            sys.exit()
+            sys.exit(f'\n{fc.R}{video_path} no existe{fc.END}')
         if prompt == '1':
             data, meta = myDict[prompt](video_path)
             # Creo la carpeta de CSVs
@@ -313,13 +317,13 @@ def main():
             meta_df.to_csv(meta_path, index=False)
             print(f'\n{fc.G}¡Listo! La data y los metadatos '
                   f'se guardaron en {csv_dir}{fc.END}')
-        myDict[prompt](video_path)
+        else:
+            myDict[prompt](video_path)
     else:
         file = input(f'\n{fc.BOLD}¿Qué video quiere abrir?: {fc.END}')
         csv_dir = os.path.join(repo_dir, 'Data', file)
         if not os.path.exists(csv_dir):
-            print(f'\n{fc.R}{csv_dir} no existe{fc.END}')
-            sys.exit()
+            sys.exit(f'\n{fc.R}{csv_dir} no existe{fc.END}')
         myDict[prompt](csv_dir)
 
 if __name__ == '__main__':

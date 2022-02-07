@@ -28,7 +28,7 @@ def unbounded(x):
 def german(csv_dir):
     '''A partir de los dos CSVs de data y metadatos alojados en el
     directorio 'csv_dir', calcula y guarda en un diccionario todas
-    las magnitudes que eventualmente se pueden llegar a necesitar.
+    las magnitudes eventualmente necesarias.
     '''
     file = os.path.basename(csv_dir)
     data_path = os.path.join(csv_dir, f'{file}_data.csv')
@@ -70,9 +70,9 @@ def german(csv_dir):
         'TIME': TIME, 'X': X, 'Y': Y, 'R': R, 'PHI': PHI,
         'ALPHA': ALPHA, 'ALPHA_UN': ALPHA_UN,
         'r_a': r_a, 'radio': radio, 'mm': mm,
-        'file': file,
         'left': meta['left'][0], 'right': meta['right'][0],
         'step': meta['step'][0], 'stop': meta['stop'][0],
+        'file': file,
         }
     return todo
 
@@ -87,8 +87,9 @@ def histograma_distancias(csv_dir):
     D = np.sqrt((X_L-X_R)**2 + (Y_L-Y_R)**2)
     D_min, D_max, D_avg = np.amin(D), np.amax(D), np.mean(D)
 
-    print(f'\nDistancias entre ojalillos: AVG = {D_avg:.2f} px\n'
-          f'MIN = {D_min:.2f} px (frame n° {np.argmin(D)}) - '
+    print(f'\nDistancias entre ojalillos:\n'
+          f'MIN = {D_min:.2f} px (frame n° {np.argmin(D)})\n'
+          f'AVG = {D_avg:.2f} px\n'
           f'MAX = {D_max:.2f} px (frame n° {np.argmax(D)})')
 
     d_min, d_max = np.floor(D_min), np.ceil(D_max)
@@ -182,7 +183,7 @@ def ajuste(csv_dir):
 
         registro.append(((t_min, t_max), np.round(vel_ang, 2)))
         prompt = input('\n¿Quiere ajustar sobre otra sección? [Y/n]: ')
-        if prompt.lower() == 'y' or prompt == '':
+        if prompt.lower() in ['y', '']:
             continue
         else:
             break
