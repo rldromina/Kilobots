@@ -511,4 +511,3 @@ def corr(lista, carpeta):
     plt.show()
 
 if __name__ == '__main__':
-    print('Se ejecuta AUX')

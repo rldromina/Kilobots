@@ -19,6 +19,8 @@ class fc:
     END = '\033[0m'
     BOLD = '\033[1m'
 
+# Funciones secundarias
+
 def prompt_valores():
     while True:
         try:
@@ -160,7 +162,7 @@ def mover_y_renombrar():
     origen_files = os.listdir(origen)
 
     if origen_files == []:
-        sys.exit(f'{fc.R}\nNo hay nada en la cámara{fc.END}')
+        sys.exit(f'{fc.R}\nNo hay nada en la cámara. Saliendo...{fc.END}')
 
     print(f'\nHay {len(origen_files)} archivo(s) en la cámara:')
     for file in origen_files:
