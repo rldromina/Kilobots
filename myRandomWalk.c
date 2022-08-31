@@ -5,8 +5,8 @@
 #define CCW 0
 #define CW 1
 #define STP 3
-#define TIME1 100
-#define TIME2 3000
+#define TIME1 50
+#define TIME2 4000
 //#define SEMILLA 5
 
 int new_motion = CW;
@@ -19,12 +19,16 @@ void setup() {
 
 void set_motion(int new_motion) {
     if (new_motion == CCW) {
-        spinup_motors();
+        set_motors(255, 0);
+        delay(15);
+        //spinup_motors();
         set_motors(kilo_turn_left, 0);
         //set_color(RGB(1, 1, 1));
         }
     else if (new_motion == CW) {
-        spinup_motors();
+        set_motors(0, 255);
+        delay(15);
+        //spinup_motors();
         set_motors(0, kilo_turn_right);
         //set_color(RGB(0, 0, 0));
         }

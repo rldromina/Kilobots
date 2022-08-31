@@ -28,7 +28,7 @@ def unbounded(x):
 def german(csv_dir):
     '''A partir de los dos CSVs de data y metadatos alojados en el
     directorio 'csv_dir', calcula y guarda en un diccionario todas
-    las magnitudes eventualmente necesarias.
+    las magnitudes necesarias.
     '''
     file = os.path.basename(csv_dir)
     data_path = os.path.join(csv_dir, f'{file}_data.csv')
@@ -42,17 +42,17 @@ def german(csv_dir):
     X_R, Y_R = data['X_R'].to_numpy(), data['Y_R'].to_numpy()
     # Posición (en px) del centro de la arena
     x_a, y_a = meta['x_a'][0], meta['y_a'][0]
-    # Radio de la arena (en px y en mm)
-    r_a, radio = meta['r_a'][0], meta['radio'][0]
+    # Radio (en px y en mm) de la arena
+    r_a, r = meta['r_a'][0], meta['r'][0]
+    # Factor de escala (px -> mm)
+    px2mm = meta['px2mm'][0]
 
     # A partir de ahora, el centro de la arena pasa a ser el origen de
     # coordenadas, invierto el sentido del eje 'y' y expreso todo en mm
 
-    # Cuántos px representan un mm
-    mm = r_a / radio
     # Vectores posición L y R de los ojalillos
-    L_x, L_y = (X_L-x_a) / mm, -(Y_L-y_a) / mm
-    R_x, R_y = (X_R-x_a) / mm, -(Y_R-y_a) / mm
+    L_x, L_y = (X_L-x_a) * px2mm, -(Y_L-y_a) * px2mm
+    R_x, R_y = (X_R-x_a) * px2mm, -(Y_R-y_a) * px2mm
     # Vector D de distancia entre ojalillos (L->R)
     D_x, D_y = R_x - L_x, R_y - L_y
     # Vector N de orientación (= vector D rotado 90° CCW)
@@ -66,13 +66,19 @@ def german(csv_dir):
     # Ángulo ALPHA_UN de orientación no acotado que 'acumula' las vueltas
     ALPHA_UN = unbounded(ALPHA)
 
+    # Versores radial R_HAT y angular PHI_HAT
+    R_HAT_x, R_HAT_y = X / R, Y / R
+    PHI_HAT_x, PHI_HAT_y = -R_HAT_y, R_HAT_x
+
     todo = {
         'TIME': TIME, 'X': X, 'Y': Y, 'R': R, 'PHI': PHI,
         'ALPHA': ALPHA, 'ALPHA_UN': ALPHA_UN,
-        'r_a': r_a, 'radio': radio, 'mm': mm,
+        'r_a': r_a, 'r': r, 'px2mm': px2mm,
+        'R_HAT_x': R_HAT_x, 'R_HAT_y': R_HAT_y,
+        'PHI_HAT_x': PHI_HAT_x, 'PHI_HAT_y': PHI_HAT_y,
         'left': meta['left'][0], 'right': meta['right'][0],
         'step': meta['step'][0], 'stop': meta['stop'][0],
-        'file': file,
+        'real': meta['real'][0], 'file': file,
         }
     return todo
 
@@ -108,14 +114,14 @@ def histograma_distancias(csv_dir):
 def graficador_arena(csv_dir):
     todo = german(csv_dir)
     t, x, y = todo['TIME'], todo['X'], todo['Y']
-    r = todo['radio']
+    R_a = todo['r_a'] * todo['px2mm']
 
     fig, ax = plt.subplots(figsize=(7, 6))
     # ---------- Trayectoria ----------
     ax.scatter(x, y, c=range(len(x)), cmap='autumn', s=1)
     # ---------- Arena ----------
-    ax.add_patch(mpl.patches.Annulus(xy=(0, 0), r=r+20, width=20, fc='#d19556'))
-    ax.add_patch(mpl.patches.Annulus(xy=(0, 0), r=r, width=5, fc='k'))
+    ax.add_patch(mpl.patches.Annulus(xy=(0, 0), r=R_a+20, width=20, fc='#d19556'))
+    ax.add_patch(mpl.patches.Annulus(xy=(0, 0), r=R_a, width=5, fc='r'))
     # ---------- Posición inicial del Kilobot ----------
     rkb = 16.5 # Radio del Kilobot (en mm)
     ax.plot(3*[x[0]], [y[0]-rkb, y[0], y[0]+rkb], '-o', ms=3, zorder=5)
@@ -129,7 +135,7 @@ def graficador_arena(csv_dir):
     fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), 
                  pad=0.04, fraction=0.046, label=r'tiempo [\si{\minute}]')
     # ---------- Configuración para una correcta representación ----------
-    lim = r + 20
+    lim = todo['r'] + 20
     ax.set_xlim(-lim, lim)
     ax.set_ylim(-lim, lim)
     ax.set_aspect('equal')
@@ -146,10 +152,11 @@ def evolucion_temporal(*csv_dir):
     ax.set_xlabel(r'tiempo $t$ [\si{\s}]')
     ax.set_ylabel(r'orientación $\alpha(t)$ [\si{\radian}]')
     ax.legend()
+    ax.grid()
     fig.tight_layout()
     plt.show()
 
-def ajuste(csv_dir):
+def ajuste_velocidad_angular(csv_dir):
     def modelo(x, y0, m):
         return y0 + m * x
 
@@ -191,58 +198,11 @@ def ajuste(csv_dir):
     print(f'\nSe hicieron {len(registro)} ajustes:\n{registro}')
     return registro
 
+###############################################################################
 
-
-
-
-
-def velocidad_angular(video, carpeta, dt=1):
-    todo = german(video, carpeta)
-    t, a = todo['T'], todo['ALPHA_UN']
-    ventana = t[t <= dt] # Ventana inicial
-    L = len(ventana) - 1
-    t0 = t[t <= t[-1]-dt] # Tiempos iniciales de las ventanas
-    N = len(t0) # Cuántas ventanas
-    w = np.zeros(N) # Velocidades angulares
-    for i in range(N):
-        da = a[i+L] - a[i]
-        dt = t[i+L] - t[i]
-        w[i] = da / dt
-    return w
-
-def velocidad_sinstop(video, carpeta):
-    todo = german(video, carpeta)
-    t, x, y = todo['T'], todo['X_MM'], todo['Y_MM']
-    r_x, r_y = todo['R_HAT_x'], todo['R_HAT_y'] # Versor r
-    phi_x, phi_y = todo['PHI_HAT_x'], todo['PHI_HAT_y'] # Versor phi
-    stop = 500*(1e-3)
-    paso = todo['step']*(1e-3)
-    ciclos = 1
-    dt = ciclos*(paso+stop)
-    ventana = t[t <= dt]
-    L = len(ventana) - 1
-    paso_t = t[t <= stop]
-    M = len(paso_t) - 1
-    teff = t[t <= t[-1]-dt] # Tiempos permitidos
-    t0 = teff[::M]
-    N = len(t0)
-    v_x, v_y = np.zeros(N), np.zeros(N) # Vector velocidad
-    v_r, v_phi, v = np.zeros(N), np.zeros(N), np.zeros(N)
-    for i in range(N):
-        j = np.where(t == t0[i])[0][0]
-        dx = x[j+L] - x[j]
-        dy = y[j+L] - y[j]
-        v_x[i] = dx / (ciclos*paso)
-        v_y[i] = dy / (ciclos*paso)
-        v_r[i] = v_x[i]*r_x[j] + v_y[i]*r_y[j]
-        v_phi[i] = v_x[i]*phi_x[j] + v_y[i]*phi_y[j]
-        v[i] = np.sqrt(v_r[i]**2 + v_phi[i]**2)
-        #v[i] = np.sqrt(v_x[i]**2 + v_y[i]**2)
-    return t0, v_r, v_phi, v
-
-def velocidad(video, carpeta, dT=0.5):
-    todo = german(video, carpeta)
-    t, x, y = todo['T'], todo['X_MM'], todo['Y_MM']
+def velocidad(csv_dir, dT=0.5):
+    todo = german(csv_dir)
+    t, x, y = todo['TIME'], todo['X'], todo['Y']
     ventana = t[t <= dT] # Ventana inicial
     L = len(ventana) - 1
     t0 = t[t <= t[-1]-dT] # Tiempos iniciales de las ventanas
@@ -281,6 +241,36 @@ def DCMA(t, x, T=60*10):
         dc = (x[i:i+len(tdcm)]-x[i])**2
         dcm = dcm + dc/len(teff)
     return tdcm, dcm
+
+def velocidad_sinstop(video, carpeta):
+    todo = german(video, carpeta)
+    t, x, y = todo['T'], todo['X_MM'], todo['Y_MM']
+    r_x, r_y = todo['R_HAT_x'], todo['R_HAT_y'] # Versor r
+    phi_x, phi_y = todo['PHI_HAT_x'], todo['PHI_HAT_y'] # Versor phi
+    stop = 500*(1e-3)
+    paso = todo['step']*(1e-3)
+    ciclos = 1
+    dt = ciclos*(paso+stop)
+    ventana = t[t <= dt]
+    L = len(ventana) - 1
+    paso_t = t[t <= stop]
+    M = len(paso_t) - 1
+    teff = t[t <= t[-1]-dt] # Tiempos permitidos
+    t0 = teff[::M]
+    N = len(t0)
+    v_x, v_y = np.zeros(N), np.zeros(N) # Vector velocidad
+    v_r, v_phi, v = np.zeros(N), np.zeros(N), np.zeros(N)
+    for i in range(N):
+        j = np.where(t == t0[i])[0][0]
+        dx = x[j+L] - x[j]
+        dy = y[j+L] - y[j]
+        v_x[i] = dx / (ciclos*paso)
+        v_y[i] = dy / (ciclos*paso)
+        v_r[i] = v_x[i]*r_x[j] + v_y[i]*r_y[j]
+        v_phi[i] = v_x[i]*phi_x[j] + v_y[i]*phi_y[j]
+        v[i] = np.sqrt(v_r[i]**2 + v_phi[i]**2)
+        #v[i] = np.sqrt(v_x[i]**2 + v_y[i]**2)
+    return t0, v_r, v_phi, v
 
 def histograma(lista, carpeta, VAR):
     fig, ax = plt.subplots()
@@ -337,6 +327,20 @@ def histograma(lista, carpeta, VAR):
     ax.legend()
     ax.text(0.4, 0.9, r'\textbf{(d)}', size=FS+3, ha='center', transform=ax.transAxes)
     plt.show()
+
+def velocidad_angular(video, carpeta, dt=1):
+    todo = german(video, carpeta)
+    t, a = todo['T'], todo['ALPHA_UN']
+    ventana = t[t <= dt] # Ventana inicial
+    L = len(ventana) - 1
+    t0 = t[t <= t[-1]-dt] # Tiempos iniciales de las ventanas
+    N = len(t0) # Cuántas ventanas
+    w = np.zeros(N) # Velocidades angulares
+    for i in range(N):
+        da = a[i+L] - a[i]
+        dt = t[i+L] - t[i]
+        w[i] = da / dt
+    return w
 
 def curvas_calibracion(lista, carpeta):
     fig, ax = plt.subplots()
@@ -510,4 +514,11 @@ def corr(lista, carpeta):
     ax.legend()
     plt.show()
 
+def main():
+    repo_dir = os.path.expanduser('~/Escritorio/Repositorios/Kilobots')
+    FILE = ['1000_50_a', '2000_50_a', '3000_50_a']
+    csv_dir = [os.path.join(repo_dir, 'Data', file) for file in FILE]
+    evolucion_temporal(*csv_dir)
+
 if __name__ == '__main__':
+    main()

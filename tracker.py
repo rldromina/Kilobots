@@ -5,9 +5,11 @@ import numpy as np
 import pandas as pd
 import cv2
 import shutil
+import skg
 from tqdm import tqdm
+from send2trash import send2trash
 
-from aux_tracker import evolucion_temporal, histograma_distancias, graficador_arena, ajuste
+from aux_tracker import evolucion_temporal, histograma_distancias, graficador_arena, ajuste_velocidad_angular
 
 class fc:
     R = '\033[91m'
@@ -28,6 +30,7 @@ def prompt_valores():
             right = int(input('¿Cuál es el valor de RIGHT?: '))
             step  = int(input('¿Cuál es el STEP (en ms)?: '))
             stop  = int(input('¿Cuál es el STOP (en ms)?: '))
+            real  = int(input('Número de realización: '))
         except ValueError:
             print(f'\n{fc.Y}Por favor, introduzca valores enteros{fc.END}')
             continue
@@ -37,7 +40,31 @@ def prompt_valores():
         else:
             print(f'\n{fc.Y}Ok, inténtelo de nuevo{fc.END}')
             continue
-    return left, right, step, stop
+    return left, right, step, stop, real
+
+def clickear(img):
+    def callback(event, x, y, flags, param):
+        if event == cv2.EVENT_MBUTTONDOWN:
+            clicks.append((x, y))
+    window_name = 'presione ESC para cerrar'
+    while True:
+        clicks = []
+        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+        cv2.resizeWindow(window_name, width=650, height=650)
+        cv2.setMouseCallback(window_name, callback)
+        while True:
+            cv2.imshow(window_name, img)
+            if cv2.waitKey(1) == 27:
+                break
+        cv2.destroyAllWindows()
+        print(f'\nPuntos clickeados:\n{clicks}')
+        prompt = input(f'\n¿Son correctos estos clicks? [Y/n]: ')
+        if prompt.lower() in ['y', '']:
+            break
+        else:
+            print(f'\n{fc.Y}Ok, inténtelo de nuevo{fc.END}')
+            continue
+    return clicks
 
 def graficador_circulos(img, circles):
     """Grafica los círculos 'circles' en la imagen 'img' de tres canales.
@@ -45,7 +72,7 @@ def graficador_circulos(img, circles):
     """
     img_ = np.copy(img)
     circles_int = np.uint16(np.rint(circles))
-    BGR = [(0, 255, 0), (255, 0, 0), (0, 255, 255), (255, 0, 255), (255, 255, 0)]
+    BGR = [(0, 255, 0), (255, 0, 0)]
     for i, circle in enumerate(circles_int[0]):
         try:
             color = BGR[i]
@@ -65,54 +92,28 @@ def graficador_circulos(img, circles):
             break
     cv2.destroyAllWindows()
 
-def detector_arena(img):
-    img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+def arena_ajuste(img):
     while True:
-        try:
-            r = int(input('\nGuess para el radio de la arena (en px): '))
-        except ValueError:
-            print(f'\n{fc.Y}Por favor, introduzca un valor entero{fc.END}')
-            continue
-        circles = cv2.HoughCircles(img_gray, cv2.HOUGH_GRADIENT, dp=1, minDist=1,
-                                   param1=50, param2=22, minRadius=r-1, maxRadius=r+1)
-        if circles is None:
-            print(f'\n{fc.Y}No se detectó nada, inténtelo de nuevo{fc.END}')
-            continue
-        print(f'\nCandidatas para la arena:\n{circles}')
+        clicks = clickear(img)
+        r, c = skg.nsphere_fit(clicks)
+        circles = [[[*c, r]]]
         graficador_circulos(img, circles)
-        prompt = input(f'\n¿Alguna de estas arenas es la correcta? [n°/n]: ')
-        try:
-            i = int(prompt)
-            arena = circles[0][i]
-            break
-        except:
-            print(f'\n{fc.Y}Inténtelo de nuevo{fc.END}')
-            continue
-    return arena
-
-def clickear(img):
-    window_name = 'presione ESC para cerrar'
-    def callback(event, x, y, flags, param):
-        if event == cv2.EVENT_MBUTTONDOWN:
-            clicks.append((x, y))
-    while True:
-        clicks = []
-        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-        cv2.resizeWindow(window_name, width=650, height=650)
-        cv2.setMouseCallback(window_name, callback)
-        while True:
-            cv2.imshow(window_name, img)
-            if cv2.waitKey(1) == 27:
-                break
-        cv2.destroyAllWindows()
-        print(f'\nPuntos clickeados:\n{clicks}')
-        prompt = input(f'\n¿Son correctos estos clicks? [Y/n]: ')
+        prompt = input('\n¿Se ajustó bien la arena? [Y/n]: ')
         if prompt.lower() in ['y', '']:
+            x_a, y_a, r_a = *c, r
             break
         else:
             print(f'\n{fc.Y}Ok, inténtelo de nuevo{fc.END}')
             continue
-    return clicks
+    return x_a, y_a, r_a
+
+def hoja_milimetrada(img):
+    clicks = clickear(img)
+    x0, y0, x1, y1 = *clicks[0], *clicks[1]
+    d_px = np.sqrt((x1-x0)**2 + (y1-y0)**2)
+    d_mm = 200
+    px2mm = d_mm / d_px
+    return px2mm
 
 def detector_ojal(img_gray, x, y, e, p1, p2, r):
     recorte = img_gray[y-e:y+e+1, x-e:x+e+1]
@@ -173,18 +174,19 @@ def mover_y_renombrar():
         prompt_mv = input(f'\n{fc.BOLD}¿Desea mover a {file}? [Y/n]: {fc.END}')
         if prompt_mv.lower() in ['y', '']:
             shutil.move(os.path.join(origen, file), destino)
-            print(f'{fc.G}Movido{fc.END}')
+            print(f'{fc.G}¡Movido!{fc.END}')
             destino_files = os.listdir(destino)
 
-            prompt_rn = input(f'{fc.BOLD}¿Desea renombrarlo? [Y/n]: {fc.END}')
+            prompt_rn = input(f'{fc.BOLD}\n¿Desea renombrarlo? [Y/n]: {fc.END}')
             if prompt_rn.lower() in ['y', '']:
                 new = input('Nuevo nombre (CON EXTENSIÓN): ').rstrip()
-                while (new in destino_files) == True:
-                    new = input('Ese nombre ya está en uso, pruebe con otro: ').rstrip()
-                current_path = os.path.join(destino, file)
                 new_path = os.path.join(destino, new)
+                if (new in destino_files) == True:
+                    send2trash(new_path)
+                    print(f'{fc.Y}Como ya existía, antes se lo movió a la papelera{fc.END}')
+                current_path = os.path.join(destino, file)
                 os.rename(current_path, new_path)
-                print(f'{fc.G}Renombrado{fc.END}')
+                print(f'{fc.G}¡Renombrado!{fc.END}')
 
 def TODO(video_path):
     ojal = 6 # Guess para el radio de los ojalillos (en px)
@@ -202,15 +204,18 @@ def TODO(video_path):
           f'{frame0.shape} y dura {segundos/60:.2f} minutos{fc.END}')
 
     print(f'\n{fc.BOLD}--- Introduzca la configuración ---{fc.END}')
-    left, right, step, stop = prompt_valores()
+    left, right, step, stop, real = prompt_valores()
 
-    print(f'\n{fc.BOLD}--- Seleccione la arena ---{fc.END}')
-    x_a, y_a, r_a = detector_arena(frame0)
+    print(f'\n{fc.BOLD}--- Ajuste la arena ---{fc.END}')
+    x_a, y_a, r_a = arena_ajuste(frame0)
+
+    print(f'\n{fc.BOLD}--- Seleccione la hoja milimetrada ---{fc.END}')
+    px2mm = hoja_milimetrada(frame0)
 
     print(f'\n{fc.BOLD}--- Seleccione los ojalillos ---{fc.END}')
     clicks = clickear(frame0)
 
-    umbrales = list(range(13, 9, -1))
+    umbrales = list(range(10, 9, -1))
     for p2 in umbrales:
         print(f'\n{fc.BOLD}--- Trackeando con un umbral p2={p2} ---{fc.END}\n')
         ret = trackeador(video_path, *clicks[0], *clicks[1], e, 50, p2, ojal)
@@ -218,19 +223,19 @@ def TODO(video_path):
             continue
         elif ret is None and p2 == umbrales[-1]:
             sys.exit(f'\n{fc.R}Ninguno de los umbrales p2 en '
-                     f'{umbrales} resultó. Saliendo...{fc.END}')
+                     f'{umbrales} funcionó. Saliendo...{fc.END}')
         else:
             TIME, X_L, Y_L, X_R, Y_R = ret
             break
 
     data = {
-        'TIME': TIME, 'X_L': X_L, 'Y_L': Y_L, 'X_R': X_R, 'Y_R': Y_R,
+        'TIME': TIME, 'X_L': X_L , 'Y_L': Y_L, 'X_R': X_R, 'Y_R': Y_R,
         }
     meta = {
-        'left': left, 'right': right, 'step': step, 'stop': stop,
+        'left': left, 'right': right, 'step': step, 'stop': stop, 'real': real,
         'frame_count': frame_count, 'fps': fps, 'segundos': segundos,
         'e': e, 'param2': p2, 'ojal': ojal,
-        'x_a': x_a, 'y_a': y_a, 'r_a': r_a, 'radio': 150,
+        'x_a': x_a, 'y_a': y_a, 'r_a': r_a, 'r': 150, 'px2mm': px2mm,
         'video_path': video_path,
         }
     return data, meta
@@ -286,7 +291,7 @@ def main():
         '2': test_umbral,
         '3': evolucion_temporal,
         '4': histograma_distancias,
-        '5': ajuste,
+        '5': ajuste_velocidad_angular,
         '6': graficador_arena,
         }
 
@@ -330,4 +335,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    # 1000_stop100_65_74

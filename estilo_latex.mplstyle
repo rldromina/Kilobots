@@ -1,6 +1,6 @@
 # Cargar este style como...
 # import matplotlib.pyplot as plt
-# plt.style.use('/path/donde/esta/el/style')
+# plt.style.use('/path/donde/este/alojado/el/style')
 # Requiere de una instalación de LaTeX (texlive-full)
 
 font.size : 20
