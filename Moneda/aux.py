@@ -126,4 +126,4 @@ def graficador(path, file):
     plt.show()
 
 my_path = os.path.expanduser(f'~/Escritorio/Repositorios/Kilobots/Data/Moneda')
-graficador(my_path, '30min')
+graficador(my_path, '30min_soft1')
